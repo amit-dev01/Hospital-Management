@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+
+<html lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Doctor Registration - HealthFlow</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "primary-fixed": "#cee5ff",
+                        "on-secondary-fixed-variant": "#005313",
+                        "inverse-primary": "#96ccff",
+                        "error": "#ba1a1a",
+                        "surface-container-highest": "#e0e3e5",
+                        "error-container": "#ffdad6",
+                        "on-surface": "#191c1e",
+                        "on-primary": "#ffffff",
+                        "on-primary-container": "#fdfcff",
+                        "outline": "#707882",
+                        "secondary-fixed-dim": "#7ddc7a",
+                        "inverse-on-surface": "#eff1f3",
+                        "primary-container": "#007abc",
+                        "tertiary-container": "#65777f",
+                        "surface-container": "#eceef0",
+                        "background": "#f7f9fb",
+                        "surface-variant": "#e0e3e5",
+                        "tertiary-fixed-dim": "#b6cad2",
+                        "secondary-fixed": "#98f994",
+                        "on-tertiary-fixed": "#0b1e24",
+                        "on-background": "#191c1e",
+                        "on-error": "#ffffff",
+                        "surface-container-lowest": "#ffffff",
+                        "on-secondary": "#ffffff",
+                        "surface-tint": "#00639a",
+                        "tertiary-fixed": "#d2e6ef",
+                        "primary-fixed-dim": "#96ccff",
+                        "on-tertiary-fixed-variant": "#374951",
+                        "tertiary": "#4c5f66",
+                        "secondary": "#006e1c",
+                        "on-tertiary-container": "#fafdff",
+                        "on-primary-fixed-variant": "#004a75",
+                        "secondary-container": "#98f994",
+                        "on-secondary-fixed": "#002204",
+                        "on-primary-fixed": "#001d32",
+                        "inverse-surface": "#2d3133",
+                        "surface-container-high": "#e6e8ea",
+                        "surface-bright": "#f7f9fb",
+                        "surface": "#f7f9fb",
+                        "on-secondary-container": "#0c7521",
+                        "surface-container-low": "#f2f4f6",
+                        "on-error-container": "#93000a",
+                        "primary": "#006096",
+                        "outline-variant": "#bfc7d2",
+                        "on-surface-variant": "#3f4851",
+                        "surface-dim": "#d8dadc",
+                        "on-tertiary": "#ffffff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "gutter": "24px",
+                        "margin-mobile": "16px",
+                        "container-max-width": "640px",
+                        "card-padding": "32px",
+                        "base": "8px",
+                        "input-height": "56px"
+                    },
+                    "fontFamily": {
+                        "body-md": ["Public Sans"],
+                        "label-md": ["Public Sans"],
+                        "body-lg": ["Public Sans"],
+                        "headline-md": ["Public Sans"],
+                        "headline-lg": ["Public Sans"]
+                    },
+                    "fontSize": {
+                        "body-md": ["16px", {"lineHeight": "1.5", "fontWeight": "400"}],
+                        "label-md": ["14px", {"lineHeight": "1.2", "letterSpacing": "0.02em", "fontWeight": "600"}],
+                        "body-lg": ["18px", {"lineHeight": "1.6", "fontWeight": "400"}],
+                        "headline-md": ["24px", {"lineHeight": "1.3", "fontWeight": "600"}],
+                        "headline-lg": ["32px", {"lineHeight": "1.2", "fontWeight": "700"}]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            vertical-align: middle;
+        }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #e2e8f0; border-radius: 10px; }
+        .custom-radio:checked + label { border-color: #006096; background-color: #f0f7ff; color: #006096; }
+    </style>
+</head>
+<body class="bg-surface font-body-md text-on-surface antialiased pb-32">
+<!-- TopAppBar -->
+<header class="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 h-16 bg-white border-b border-slate-200 font-['Public_Sans'] antialiased">
+<div class="text-xl font-bold text-sky-700">HealthFlow</div>
+<div class="flex items-center gap-4">
+<button class="material-symbols-outlined text-slate-500 hover:bg-slate-50 p-2 rounded-full transition-colors" data-icon="help_outline">help_outline</button>
+</div>
+</header>
+<main class="mt-20 px-4 md:px-0">
+<div class="max-w-[640px] mx-auto">
+<!-- Progress Bar -->
+<div class="mb-8">
+<div class="flex justify-between items-center mb-2">
+<span class="text-label-md text-primary">Registration Progress</span>
+<span class="text-label-md text-on-surface-variant">75% Complete</span>
+</div>
+<div class="h-1.5 w-full bg-surface-container-highest rounded-full overflow-hidden">
+<div class="h-full bg-secondary w-3/4 rounded-full transition-all duration-500"></div>
+</div>
+</div>
+<form class="space-y-8">
+<!-- Section 1: Basic Info -->
+<section class="bg-surface-container-lowest rounded-xl p-card-padding border border-outline-variant shadow-sm">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary text-[28px]" data-icon="person_outline">person_outline</span>
+<h2 class="text-headline-md font-headline-md">Basic Information</h2>
+</div>
+<div class="space-y-6">
+<div class="group">
+<label class="block text-label-md text-on-surface-variant mb-2">Full Name</label>
+<input class="w-full h-input-height px-4 rounded-lg border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all text-body-md" placeholder="Dr. John Doe" type="text"/>
+</div>
+<div class="grid grid-cols-2 gap-4">
+<div>
+<label class="block text-label-md text-on-surface-variant mb-2">Age</label>
+<input class="w-full h-input-height px-4 rounded-lg border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all text-body-md" placeholder="45" type="number"/>
+</div>
+<div>
+<label class="block text-label-md text-on-surface-variant mb-2">Gender</label>
+<div class="flex h-input-height gap-2">
+<div class="relative flex-1">
+<input checked="" class="hidden custom-radio" id="male" name="gender" type="radio"/>
+<label class="flex items-center justify-center h-full border border-outline-variant rounded-lg cursor-pointer text-body-md transition-all hover:bg-surface-container-low" for="male">Male</label>
+</div>
+<div class="relative flex-1">
+<input class="hidden custom-radio" id="female" name="gender" type="radio"/>
+<label class="flex items-center justify-center h-full border border-outline-variant rounded-lg cursor-pointer text-body-md transition-all hover:bg-surface-container-low" for="female">Female</label>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 2: Contact -->
+<section class="bg-surface-container-lowest rounded-xl p-card-padding border border-outline-variant shadow-sm">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary text-[28px]" data-icon="contact_page">contact_page</span>
+<h2 class="text-headline-md font-headline-md">Contact Verification</h2>
+</div>
+<div class="space-y-6">
+<div>
+<label class="block text-label-md text-on-surface-variant mb-2">Mobile Number</label>
+<div class="flex gap-2">
+<div class="w-20 h-input-height flex items-center justify-center bg-surface-container border border-outline-variant rounded-lg font-medium">+91</div>
+<div class="relative flex-1">
+<input class="w-full h-input-height px-4 rounded-lg border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all text-body-md" placeholder="98765 43210" type="tel"/>
+<button class="absolute right-2 top-2 h-10 px-4 bg-primary text-white rounded-md text-label-md hover:bg-primary-container transition-colors" type="button">Send OTP</button>
+</div>
+</div>
+</div>
+<div>
+<label class="block text-label-md text-on-surface-variant mb-2">OTP Verification</label>
+<input class="w-full h-input-height px-4 rounded-lg border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all text-body-md tracking-[0.5em] text-center" placeholder="Enter 6-digit code" type="text"/>
+<p class="mt-2 text-label-md text-secondary flex items-center gap-1">
+<span class="material-symbols-outlined text-sm" data-icon="check_circle">check_circle</span> Code verified successfully
+                            </p>
+</div>
+<div>
+<label class="block text-label-md text-on-surface-variant mb-2">Email Address (Optional)</label>
+<input class="w-full h-input-height px-4 rounded-lg border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all text-body-md" placeholder="john.doe@healthflow.com" type="email"/>
+</div>
+</div>
+</section>
+<!-- Section 3: Professional Details -->
+<section class="bg-surface-container-lowest rounded-xl p-card-padding border border-outline-variant shadow-sm">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary text-[28px]" data-icon="school">school</span>
+<h2 class="text-headline-md font-headline-md">Professional Profile</h2>
+</div>
+<div class="space-y-6">
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div>
+<label class="block text-label-md text-on-surface-variant mb-2">Specialization</label>
+<select class="w-full h-input-height px-4 rounded-lg border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all text-body-md appearance-none bg-white">
+<option>Select Specialization</option>
+<option>Cardiology</option>
+<option>Radiology</option>
+<option>Neurology</option>
+<option>Pediatrics</option>
+<option>Dermatology</option>
+</select>
+</div>
+<div>
+<label class="block text-label-md text-on-surface-variant mb-2">Years of Experience</label>
+<input class="w-full h-input-height px-4 rounded-lg border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all text-body-md" placeholder="12" type="number"/>
+</div>
+</div>
+<div>
+<label class="block text-label-md text-on-surface-variant mb-2">About (Professional Summary)</label>
+<textarea class="w-full p-4 rounded-lg border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all text-body-md resize-none" placeholder="Briefly describe your medical background and expertise..." rows="4"></textarea>
+</div>
+</div>
+</section>
+<!-- Section 4: Practice Info -->
+<section class="bg-surface-container-lowest rounded-xl p-card-padding border border-outline-variant shadow-sm">
+<div class="flex items-center gap-3 mb-6">
+<span class="material-symbols-outlined text-primary text-[28px]" data-icon="location_on">location_on</span>
+<h2 class="text-headline-md font-headline-md">Practice Information</h2>
+</div>
+<div class="space-y-6">
+<div class="flex items-center justify-between p-4 bg-surface-container-low rounded-lg">
+<span class="text-body-md font-medium text-on-surface">Primary Practice Location</span>
+<div class="flex items-center gap-3">
+<span class="text-label-md text-on-surface-variant">Hospital</span>
+<button class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none bg-primary" role="switch" type="button">
+<span class="translate-x-5 pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out"></span>
+</button>
+<span class="text-label-md text-primary font-bold">Clinic</span>
+</div>
+</div>
+<div>
+<label class="block text-label-md text-on-surface-variant mb-2">Practice Name</label>
+<input class="w-full h-input-height px-4 rounded-lg border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all text-body-md" placeholder="Wellness Heart Clinic" type="text"/>
+</div>
+<div>
+<label class="block text-label-md text-on-surface-variant mb-2">Full Address</label>
+<div class="relative">
+<textarea class="w-full p-4 rounded-lg border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all text-body-md resize-none" placeholder="Suite 402, Medical Square..." rows="3"></textarea>
+<button class="absolute bottom-4 right-4 text-primary text-label-md flex items-center gap-1 hover:underline" type="button">
+<span class="material-symbols-outlined text-sm" data-icon="map">map</span> Use Maps
+                                </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Section 5: ID Verification -->
+<section class="bg-surface-container-lowest rounded-xl p-card-padding border border-outline-variant shadow-sm mb-12">
+<div class="flex items-center justify-between mb-6">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary text-[28px]" data-icon="verified_user">verified_user</span>
+<h2 class="text-headline-md font-headline-md">Identity &amp; Licensing</h2>
+</div>
+<span class="px-3 py-1 bg-tertiary-fixed text-on-tertiary-fixed-variant text-label-md rounded-full flex items-center gap-1">
+<span class="material-symbols-outlined text-xs" data-icon="hourglass_empty">hourglass_empty</span> Pending
+                        </span>
+</div>
+<div class="space-y-6">
+<div class="border-2 border-dashed border-outline-variant rounded-xl p-8 text-center hover:bg-surface-container-low transition-colors cursor-pointer group">
+<span class="material-symbols-outlined text-[48px] text-on-surface-variant mb-4 group-hover:text-primary transition-colors" data-icon="upload_file">upload_file</span>
+<p class="text-body-md font-medium">Click to upload Medical License</p>
+<p class="text-label-md text-on-surface-variant mt-1">PDF, JPG or PNG (Max 5MB)</p>
+</div>
+<div>
+<label class="block text-label-md text-on-surface-variant mb-2">Registration / ID Number</label>
+<input class="w-full h-input-height px-4 rounded-lg border-outline-variant focus:border-primary focus:ring-1 focus:ring-primary transition-all text-body-md" placeholder="MCI-12345678" type="text"/>
+</div>
+<div class="flex items-start gap-3 p-4 bg-primary-fixed/30 rounded-lg">
+<span class="material-symbols-outlined text-primary-container" data-icon="info">info</span>
+<p class="text-label-md text-on-primary-fixed-variant">Verification typically takes 24-48 hours. You can continue setting up your profile while we verify your credentials.</p>
+</div>
+</div>
+</section>
+</form>
+</div>
+</main>
+<!-- Bottom Action Bar -->
+<nav class="fixed bottom-0 left-0 w-full z-50 bg-white dark:bg-slate-900 px-4 py-4 flex justify-center border-t border-slate-200 shadow-[0_-4px_12px_0_rgba(0,0,0,0.05)]">
+<button class="flex flex-col items-center justify-center bg-sky-600 text-white rounded-lg py-3 px-8 w-full max-w-[640px] mx-auto hover:bg-sky-700 transition-all active:scale-[0.98] font-['Public_Sans'] text-sm font-medium">
+<span class="flex items-center gap-2">
+<span class="material-symbols-outlined text-white" data-icon="check_circle">check_circle</span>
+                Complete Registration
+            </span>
+</button>
+</nav>
+</body></html>
