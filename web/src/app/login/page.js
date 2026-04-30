@@ -6,29 +6,54 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { motion } from "framer-motion";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { createClient } from "@/lib/supabase/client";
 
 function LoginContent() {
-  const [identifier, setIdentifier] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
   const searchParams = useSearchParams();
-  
-  const role = searchParams.get("role") || "";
-  const isFormValid = identifier.length > 0 && password.length > 0;
+  const roleHint = searchParams.get("role") || "";
 
-  const handleLogin = (e) => {
+  const isFormValid = email.includes("@") && password.length > 0;
+
+  const handleLogin = async (e) => {
     e.preventDefault();
     if (!isFormValid) return;
-    
-    // Use role parameter if present, otherwise fallback to identifier mock logic
-    if (role === "doctor" || identifier.toLowerCase().includes("doctor")) {
-      router.push("/doctor/dashboard");
-    } else if (role === "admin" || identifier.toLowerCase().includes("admin") || identifier.toLowerCase().includes("hospital")) {
-      router.push("/hospital/dashboard");
-    } else {
-      router.push("/patient/dashboard");
+
+    setLoading(true);
+    setError("");
+
+    const supabase = createClient();
+    const { data, error: authError } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (authError) {
+      setError(authError.message);
+      setLoading(false);
+      return;
     }
+
+    // Fetch role from profiles
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", data.user.id)
+      .single();
+
+    const role = profile?.role || roleHint || "patient";
+    
+    // Force a hard navigation to clear the Next.js client-side router cache.
+    // This prevents the redirect loop where the router uses a cached 
+    // redirect to /login from before the user was authenticated.
+    if (role === "doctor") window.location.href = "/doctor/dashboard";
+    else if (role === "admin") window.location.href = "/hospital/dashboard";
+    else window.location.href = "/patient/dashboard";
   };
 
   return (
@@ -57,7 +82,7 @@ function LoginContent() {
 
       {/* Main Form Area */}
       <main className="flex-grow flex items-center justify-center px-4 relative z-10 pb-20">
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, y: 20, scale: 0.95 }}
           animate={{ opacity: 1, y: 0, scale: 1 }}
           transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
@@ -72,19 +97,31 @@ function LoginContent() {
           {/* Glass Form Card */}
           <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200 dark:border-slate-800/60 rounded-3xl p-8 shadow-xl dark:shadow-2xl">
             <form className="space-y-6" onSubmit={handleLogin}>
-              
+
+              {/* Error Message */}
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400"
+                >
+                  <span className="material-symbols-outlined text-[18px]">error</span>
+                  <span className="text-sm font-medium">{error}</span>
+                </motion.div>
+              )}
+
               <div className="space-y-2">
-                <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1">Email or ID</label>
+                <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1">Email Address</label>
                 <div className="relative group">
                   <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 dark:text-slate-500 pointer-events-none group-focus-within:text-sky-500 dark:group-focus-within:text-sky-400 transition-colors">
-                    <span className="material-symbols-outlined text-[20px]">person</span>
+                    <span className="material-symbols-outlined text-[20px]">mail</span>
                   </div>
                   <input
                     className="w-full h-14 pl-12 pr-4 bg-white dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-2xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500/50 transition-all outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium shadow-sm dark:shadow-none"
-                    placeholder="doctor / admin / patient"
-                    type="text"
-                    value={identifier}
-                    onChange={(e) => setIdentifier(e.target.value)}
+                    placeholder="you@example.com"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
                     required
                   />
                 </div>
@@ -120,22 +157,31 @@ function LoginContent() {
               <div className="pt-2">
                 <button
                   type="submit"
-                  disabled={!isFormValid}
+                  disabled={!isFormValid || loading}
                   className={`w-full h-14 text-sm font-bold rounded-2xl flex items-center justify-center gap-2 transition-all duration-300 ${
-                    isFormValid
+                    isFormValid && !loading
                       ? "bg-gradient-to-r from-sky-500 to-teal-400 text-white shadow-[0_0_20px_rgba(14,165,233,0.3)] hover:shadow-[0_0_30px_rgba(14,165,233,0.5)] active:scale-[0.98]"
                       : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700"
                   }`}
                 >
-                  Sign In to Secure Portal
-                  <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                  {loading ? (
+                    <>
+                      <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                      Signing in…
+                    </>
+                  ) : (
+                    <>
+                      Sign In to Secure Portal
+                      <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    </>
+                  )}
                 </button>
               </div>
             </form>
 
             <div className="mt-8 flex items-center justify-center gap-2 border-t border-slate-200 dark:border-slate-800/60 pt-6">
               <span className="text-sm font-medium text-slate-500 dark:text-slate-400">New to HealthSync?</span>
-              <Link href={role ? `/register/${role}` : "/register/role"} className="text-sm font-bold text-sky-600 dark:text-white hover:text-sky-700 dark:hover:text-sky-400 transition-colors">
+              <Link href={roleHint ? `/register/${roleHint}` : "/register/role"} className="text-sm font-bold text-sky-600 dark:text-white hover:text-sky-700 dark:hover:text-sky-400 transition-colors">
                 Create an Account
               </Link>
             </div>

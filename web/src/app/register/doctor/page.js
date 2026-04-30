@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
+import { createClient } from "@/lib/supabase/client";
 
 const staggerContainer = {
   hidden: { opacity: 0 },
@@ -37,6 +38,8 @@ export default function DoctorSignup() {
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [otp, setOtp] = useState(["", "", "", ""]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const router = useRouter();
 
   const isFormValid = 
@@ -82,11 +85,38 @@ export default function DoctorSignup() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (isFormValid) {
-      router.push("/doctor/dashboard");
-    }
+    if (!isFormValid) return;
+    setLoading(true);
+    setError("");
+
+    const supabase = createClient();
+    const { data, error: authError } = await supabase.auth.signUp({
+      email: formData.email,
+      password: formData.password,
+      options: { data: { full_name: formData.name, role: "doctor" } },
+    });
+
+    if (authError) { setError(authError.message); setLoading(false); return; }
+    if (!data.user) { setError("Failed to create account."); setLoading(false); return; }
+
+    const { error: profileError } = await supabase.from("profiles").insert({
+      id: data.user.id, role: "doctor", full_name: formData.name, phone: formData.phone,
+    });
+    if (profileError) { setError(profileError.message); setLoading(false); return; }
+
+    const { error: doctorError } = await supabase.from("doctors").insert({
+      id: data.user.id,
+      specialization: formData.specialization,
+      experience_years: parseInt(formData.experience),
+      hospital_name: formData.hospitalName,
+      license_number: formData.licenseNumber,
+      is_verified: false,
+    });
+    if (doctorError) { setError(doctorError.message); setLoading(false); return; }
+
+    router.push("/doctor/dashboard");
   };
 
   const handleVerifyOtp = () => {
@@ -147,6 +177,12 @@ export default function DoctorSignup() {
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-sky-500 to-blue-400"></div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              {error && (
+                <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400">
+                  <span className="material-symbols-outlined text-[18px]">error</span>
+                  <span className="text-sm font-medium">{error}</span>
+                </motion.div>
+              )}
               <motion.div variants={staggerContainer} initial="hidden" animate="show" className="space-y-6">
                 
                 {/* Row 1: Full Name & Contact Number */}
@@ -382,16 +418,15 @@ export default function DoctorSignup() {
                 {/* Submit Button */}
                 <motion.div variants={fadeUp} className="pt-4">
                   <button
-                    disabled={!isFormValid}
+                    disabled={!isFormValid || loading}
                     type="submit"
                     className={`w-full h-14 text-sm font-bold rounded-2xl flex items-center justify-center gap-2 transition-all duration-300 ${
-                      isFormValid
+                      isFormValid && !loading
                         ? "bg-gradient-to-r from-sky-500 to-blue-500 text-white shadow-[0_0_20px_rgba(14,165,233,0.3)] hover:shadow-[0_0_30px_rgba(14,165,233,0.5)] active:scale-[0.98]"
                         : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700"
                     }`}
                   >
-                    Complete Registration
-                    <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
+                    {loading ? (<><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />Creating Account…</>) : (<>Complete Registration<span className="material-symbols-outlined text-[18px]">arrow_forward</span></>)}
                   </button>
                 </motion.div>
               </motion.div>
