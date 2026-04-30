@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 export default function HospitalDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
@@ -20,8 +21,8 @@ export default function HospitalDashboard() {
       
       {/* Top Navigation */}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-4 min-h-[4rem] py-2 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2 notranslate">
             <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
               <span className="material-symbols-outlined text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>domain</span>
             </div>
@@ -34,8 +35,11 @@ export default function HospitalDashboard() {
             <button onClick={() => setActiveTab("staff")} className={`h-full px-4 border-b-2 font-bold text-sm transition-colors ${activeTab === "staff" ? "border-indigo-500 text-indigo-600 dark:text-indigo-400" : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"}`}>Staff Directory</button>
           </div>
 
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <LanguageToggle />
+              <ThemeToggle />
+            </div>
             <div className="w-10 h-10 rounded-full bg-indigo-100 dark:bg-indigo-900/50 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-bold border border-indigo-200 dark:border-indigo-800">
               AD
             </div>

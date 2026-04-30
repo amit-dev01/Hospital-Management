@@ -3,8 +3,11 @@
 import { useState } from "react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useTranslations } from "next-intl";
 
 export default function PatientDashboard() {
+  const t = useTranslations("PatientDashboard");
   const [searchTerm, setSearchTerm] = useState("");
 
   const doctors = [
@@ -19,16 +22,19 @@ export default function PatientDashboard() {
       
       {/* Top Navigation */}
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md border-b border-slate-200 dark:border-slate-800">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center gap-2">
+        <div className="max-w-7xl mx-auto px-4 min-h-[4rem] py-2 flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-2 notranslate">
             <div className="w-8 h-8 rounded-lg bg-emerald-500 flex items-center justify-center">
               <span className="material-symbols-outlined text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>ecg_heart</span>
             </div>
             <span className="font-black text-xl tracking-tight text-slate-900 dark:text-white">HealthSync</span>
           </div>
 
-          <div className="flex items-center gap-4">
-            <ThemeToggle />
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <LanguageToggle />
+              <ThemeToggle />
+            </div>
             <Link href="/patient/profile" className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center text-emerald-600 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800 hover:ring-2 hover:ring-emerald-500 transition-all">
               JD
             </Link>
@@ -41,12 +47,12 @@ export default function PatientDashboard() {
         {/* Welcome Section */}
         <section className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h1 className="text-3xl font-black text-slate-900 dark:text-white">Good Morning, Johnathan!</h1>
-            <p className="text-slate-500 dark:text-slate-400 mt-1">Here is your health overview for today.</p>
+            <h1 className="text-3xl font-black text-slate-900 dark:text-white">{t("greeting")}</h1>
+            <p className="text-slate-500 dark:text-slate-400 mt-1">{t("overview")}</p>
           </div>
           <Link href="/patient/book" className="bg-emerald-500 hover:bg-emerald-600 text-white px-6 py-3 rounded-xl font-bold transition-colors flex items-center gap-2 shadow-sm">
             <span className="material-symbols-outlined text-[20px]">calendar_add_on</span>
-            Book Appointment
+            {t("book_appointment")}
           </Link>
         </section>
 
@@ -57,8 +63,8 @@ export default function PatientDashboard() {
               <span className="material-symbols-outlined text-3xl">event</span>
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Upcoming Visit</p>
-              <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">Tomorrow, 10:00 AM</p>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{t("upcoming_visit")}</p>
+              <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">{t("tomorrow")}</p>
             </div>
           </div>
 
@@ -67,8 +73,8 @@ export default function PatientDashboard() {
               <span className="material-symbols-outlined text-3xl">prescriptions</span>
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Active Prescriptions</p>
-              <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">2 Medicines</p>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{t("active_prescriptions")}</p>
+              <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">{t("medicines_count")}</p>
             </div>
           </div>
 
@@ -77,8 +83,8 @@ export default function PatientDashboard() {
               <span className="material-symbols-outlined text-3xl">folder_supervised</span>
             </div>
             <div>
-              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">Lab Reports</p>
-              <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">1 New Result</p>
+              <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{t("lab_reports")}</p>
+              <p className="text-xl font-bold text-slate-900 dark:text-white mt-1">{t("new_result")}</p>
             </div>
           </div>
         </section>
@@ -88,7 +94,7 @@ export default function PatientDashboard() {
           
           {/* Left Column: Smart Booking CTA */}
           <div className="lg:col-span-2 space-y-6">
-            <h2 className="text-xl font-bold text-slate-900 dark:text-white">Quick Actions</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">{t("quick_actions")}</h2>
             
             <div className="bg-gradient-to-br from-emerald-500 to-teal-600 rounded-3xl p-8 shadow-lg shadow-emerald-500/20 relative overflow-hidden group">
               {/* Decorative elements */}
@@ -101,14 +107,14 @@ export default function PatientDashboard() {
                 </div>
                 
                 <div className="flex-1 text-white">
-                  <h3 className="text-3xl font-black mb-2">Smart Triage & Booking</h3>
+                  <h3 className="text-3xl font-black mb-2">{t("smart_triage")}</h3>
                   <p className="text-emerald-50 mb-6 text-lg">
-                    Experiencing symptoms? Let our AI assign you the right priority and department instantly, or simply schedule a future visit.
+                    {t("triage_desc")}
                   </p>
                   
                   <Link href="/patient/book" className="inline-flex items-center gap-2 bg-white text-emerald-600 px-8 py-4 rounded-xl font-black text-lg hover:bg-slate-50 hover:scale-105 transition-all shadow-xl shadow-black/10">
                     <span className="material-symbols-outlined text-[24px]">calendar_add_on</span>
-                    BOOK AN APPOINTMENT
+                    {t("book_cta")}
                   </Link>
                 </div>
               </div>
@@ -121,9 +127,9 @@ export default function PatientDashboard() {
                   <div className="w-12 h-12 bg-sky-100 dark:bg-sky-500/20 text-sky-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                     <span className="material-symbols-outlined">health_metrics</span>
                   </div>
-                  <h3 className="font-bold text-lg text-slate-900 dark:text-white">Health Records</h3>
+                  <h3 className="font-bold text-lg text-slate-900 dark:text-white">{t("health_records")}</h3>
                 </div>
-                <p className="text-slate-500 dark:text-slate-400 text-sm">Access your complete medical history, lab results, and vaccination records.</p>
+                <p className="text-slate-500 dark:text-slate-400 text-sm">{t("records_desc")}</p>
               </div>
 
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm hover:border-emerald-500/50 transition-colors cursor-pointer group">
@@ -131,9 +137,9 @@ export default function PatientDashboard() {
                   <div className="w-12 h-12 bg-purple-100 dark:bg-purple-500/20 text-purple-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
                     <span className="material-symbols-outlined">medication</span>
                   </div>
-                  <h3 className="font-bold text-lg text-slate-900 dark:text-white">Pharmacy</h3>
+                  <h3 className="font-bold text-lg text-slate-900 dark:text-white">{t("pharmacy")}</h3>
                 </div>
-                <p className="text-slate-500 dark:text-slate-400 text-sm">Order prescription refills and track your current medications easily.</p>
+                <p className="text-slate-500 dark:text-slate-400 text-sm">{t("pharmacy_desc")}</p>
               </div>
             </div>
           </div>

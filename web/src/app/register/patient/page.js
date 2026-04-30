@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
+import { useTranslations } from "next-intl";
 
 const staggerContainer = {
   hidden: { opacity: 0 },
@@ -20,10 +22,13 @@ const fadeUp = {
 };
 
 export default function PatientSignup() {
+  const t = useTranslations("PatientRegister");
   const [formData, setFormData] = useState({
     name: "",
+    email: "",
     age: "",
     gender: "",
+    bloodGroup: "",
     phone: "",
     password: "",
     confirmPassword: "",
@@ -36,8 +41,10 @@ export default function PatientSignup() {
 
   const isFormValid = 
     formData.name && 
+    formData.email && formData.email.includes("@") &&
     formData.age && 
     formData.gender && 
+    formData.bloodGroup &&
     formData.phone.length >= 10 && 
     isPhoneVerified &&
     formData.password && 
@@ -96,10 +103,13 @@ export default function PatientSignup() {
           <div className="w-10 h-10 rounded-xl bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex items-center justify-center group-hover:bg-slate-100 dark:group-hover:bg-slate-800 transition-colors shadow-sm">
             <span className="material-symbols-outlined text-slate-700 dark:text-white" style={{ fontVariationSettings: "'FILL' 1" }}>arrow_back</span>
           </div>
-          <span className="text-sm font-bold tracking-wide text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Back to Home</span>
+          <span className="text-sm font-bold tracking-wide text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">{t("back_home")}</span>
         </Link>
         <div className="flex items-center gap-4">
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
+            <ThemeToggle />
+          </div>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-emerald-500 to-teal-400 flex items-center justify-center shadow-md">
               <span className="material-symbols-outlined text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>ecg_heart</span>
@@ -122,8 +132,8 @@ export default function PatientSignup() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 mb-6 border border-emerald-200 dark:border-emerald-500/20 shadow-inner">
               <span className="material-symbols-outlined text-3xl">person_add</span>
             </div>
-            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white mb-2">Create Patient Account</h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">Join HealthSync to securely manage your health journey.</p>
+            <h1 className="text-3xl font-black tracking-tight text-slate-900 dark:text-white mb-2">{t("title")}</h1>
+            <p className="text-sm text-slate-600 dark:text-slate-400 font-medium">{t("subtitle")}</p>
           </div>
 
           {/* Form Card */}
@@ -137,7 +147,7 @@ export default function PatientSignup() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Full Name */}
                   <motion.div variants={fadeUp} className="space-y-1.5">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1" htmlFor="name">Full Name</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1" htmlFor="name">{t("full_name")}</label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 dark:text-slate-500 pointer-events-none group-focus-within:text-emerald-500 transition-colors">
                         <span className="material-symbols-outlined text-[20px]">badge</span>
@@ -156,7 +166,7 @@ export default function PatientSignup() {
 
                   {/* Mobile Number */}
                   <motion.div variants={fadeUp} className="space-y-1.5">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1" htmlFor="phone">Mobile Number</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1" htmlFor="phone">{t("mobile_number")}</label>
                     <div className="relative group flex">
                       <div className="flex items-center justify-center px-4 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-800 border-r-0 rounded-l-xl text-slate-500 font-bold text-sm">
                         +91
@@ -175,7 +185,7 @@ export default function PatientSignup() {
                       {/* Inline Verification UI */}
                       {isPhoneVerified ? (
                         <div className="flex items-center justify-center px-4 bg-emerald-100 dark:bg-emerald-500/20 border border-emerald-200 dark:border-emerald-500/20 border-l-0 rounded-r-xl text-emerald-600 dark:text-emerald-400 font-bold text-sm">
-                          <span className="material-symbols-outlined text-[18px] mr-1">verified</span> Verified
+                          <span className="material-symbols-outlined text-[18px] mr-1">verified</span> {t("verified")}
                         </div>
                       ) : formData.phone.length >= 10 ? (
                         <button
@@ -183,20 +193,39 @@ export default function PatientSignup() {
                           onClick={handleVerifyPhoneClick}
                           className="flex items-center justify-center px-4 bg-slate-900 dark:bg-white border border-slate-900 dark:border-white border-l-0 rounded-r-xl text-white dark:text-slate-900 font-bold text-sm hover:bg-slate-800 dark:hover:bg-slate-100 transition-colors"
                         >
-                          Verify
+                          {t("verify")}
                         </button>
                       ) : null}
                     </div>
                     {!isPhoneVerified && formData.phone.length >= 10 && (
-                      <p className="text-xs text-amber-600 dark:text-amber-400 font-medium ml-1 mt-1">Please verify your phone number to continue.</p>
+                      <p className="text-xs text-amber-600 dark:text-amber-400 font-medium ml-1 mt-1">{t("verify_prompt")}</p>
                     )}
                   </motion.div>
                 </div>
 
-                {/* Row 2: Age & Gender */}
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Email Address */}
+                <motion.div variants={fadeUp} className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1" htmlFor="email">{t("email")}</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 dark:text-slate-500 pointer-events-none group-focus-within:text-emerald-500 transition-colors">
+                      <span className="material-symbols-outlined text-[20px]">mail</span>
+                    </div>
+                    <input
+                      className="w-full h-12 pl-11 pr-4 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium"
+                      id="email"
+                      placeholder="patient@example.com"
+                      required
+                      type="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </motion.div>
+
+                {/* Row 2: Age, Gender & Blood Group */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   <motion.div variants={fadeUp} className="space-y-1.5">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1" htmlFor="age">Age</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1" htmlFor="age">{t("age")}</label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 dark:text-slate-500 pointer-events-none group-focus-within:text-emerald-500 transition-colors">
                         <span className="material-symbols-outlined text-[20px]">cake</span>
@@ -214,7 +243,7 @@ export default function PatientSignup() {
                   </motion.div>
 
                   <motion.div variants={fadeUp} className="space-y-1.5">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1">Gender</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1">{t("gender")}</label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 dark:text-slate-500 pointer-events-none group-focus-within:text-emerald-500 transition-colors">
                         <span className="material-symbols-outlined text-[20px]">wc</span>
@@ -227,10 +256,40 @@ export default function PatientSignup() {
                         value={formData.gender}
                         onChange={handleChange}
                       >
-                        <option value="" disabled>Select gender</option>
-                        <option value="male">Male</option>
-                        <option value="female">Female</option>
-                        <option value="other">Other</option>
+                        <option value="" disabled>{t("select_gender")}</option>
+                        <option value="male">{t("male")}</option>
+                        <option value="female">{t("female")}</option>
+                        <option value="other">{t("other")}</option>
+                      </select>
+                      <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
+                        <span className="material-symbols-outlined text-[20px]">expand_more</span>
+                      </div>
+                    </div>
+                  </motion.div>
+
+                  <motion.div variants={fadeUp} className="space-y-1.5">
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1">{t("blood_group")}</label>
+                    <div className="relative group">
+                      <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 dark:text-slate-500 pointer-events-none group-focus-within:text-emerald-500 transition-colors">
+                        <span className="material-symbols-outlined text-[20px]">bloodtype</span>
+                      </div>
+                      <select
+                        className="w-full h-12 pl-11 pr-4 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500/50 transition-all outline-none appearance-none font-medium"
+                        id="bloodGroup"
+                        name="bloodGroup"
+                        required
+                        value={formData.bloodGroup}
+                        onChange={handleChange}
+                      >
+                        <option value="" disabled>{t("select_blood")}</option>
+                        <option value="A+">A+</option>
+                        <option value="A-">A-</option>
+                        <option value="B+">B+</option>
+                        <option value="B-">B-</option>
+                        <option value="O+">O+</option>
+                        <option value="O-">O-</option>
+                        <option value="AB+">AB+</option>
+                        <option value="AB-">AB-</option>
                       </select>
                       <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none text-slate-400">
                         <span className="material-symbols-outlined text-[20px]">expand_more</span>
@@ -242,7 +301,7 @@ export default function PatientSignup() {
                 {/* Row 3: Passwords */}
                 <motion.div variants={fadeUp} className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1" htmlFor="password">Password</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1" htmlFor="password">{t("password")}</label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 dark:text-slate-500 pointer-events-none group-focus-within:text-emerald-500 transition-colors">
                         <span className="material-symbols-outlined text-[20px]">lock</span>
@@ -267,7 +326,7 @@ export default function PatientSignup() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1" htmlFor="confirmPassword">Confirm</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1" htmlFor="confirmPassword">{t("confirm")}</label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 dark:text-slate-500 pointer-events-none group-focus-within:text-emerald-500 transition-colors">
                         <span className="material-symbols-outlined text-[20px]">lock_reset</span>
@@ -300,7 +359,7 @@ export default function PatientSignup() {
                         : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700"
                     }`}
                   >
-                    Complete Registration
+                    {t("complete_registration")}
                     <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                   </button>
                 </motion.div>
@@ -308,9 +367,9 @@ export default function PatientSignup() {
             </form>
 
             <div className="mt-8 flex items-center justify-center gap-2 border-t border-slate-200 dark:border-slate-800/60 pt-6">
-              <span className="text-sm font-medium text-slate-500 dark:text-slate-400">Already registered?</span>
+              <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{t("already_registered")}</span>
               <Link href="/login?role=patient" className="text-sm font-bold text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors">
-                Sign In
+                {t("sign_in")}
               </Link>
             </div>
           </div>
@@ -331,8 +390,8 @@ export default function PatientSignup() {
               <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 mb-4">
                 <span className="material-symbols-outlined text-3xl">mark_email_read</span>
               </div>
-              <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">Verify Phone</h2>
-              <p className="text-sm text-slate-500 dark:text-slate-400">We've sent a 4-digit verification code to <strong className="text-slate-700 dark:text-slate-300">+91 {formData.phone}</strong></p>
+              <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-2">{t("verify_phone_title")}</h2>
+              <p className="text-sm text-slate-500 dark:text-slate-400">{t("otp_sent")} <strong className="text-slate-700 dark:text-slate-300">+91 {formData.phone}</strong></p>
             </div>
 
             <div className="flex justify-between gap-3 mb-8">
@@ -363,14 +422,14 @@ export default function PatientSignup() {
                   : "bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 cursor-not-allowed border border-slate-200 dark:border-slate-700"
               }`}
             >
-              Verify OTP
+              {t("verify_otp")}
             </button>
             
             <button 
               onClick={() => setShowOtpModal(false)}
               className="w-full mt-4 text-sm font-bold text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-300 transition-colors"
             >
-              Cancel
+              {t("cancel")}
             </button>
           </motion.div>
         </div>

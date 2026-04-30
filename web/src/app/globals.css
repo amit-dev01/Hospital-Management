@@ -63,10 +63,20 @@
   --font-body-md: var(--font-public-sans);
 }
 
+* {
+  line-height: 1.6 !important;
+}
+
 body {
-  font-family: var(--font-public-sans), sans-serif;
+  font-family: var(--font-public-sans), 'Noto Sans Devanagari', 'Mukta', sans-serif;
   background-color: var(--color-background);
   color: var(--color-on-background);
+}
+
+/* Indic script font support via Google Fonts - loaded by layout.js <head> */
+:lang(hi), :lang(bn), :lang(te) {
+  font-family: 'Noto Sans Devanagari', 'Noto Sans Bengali', 'Noto Sans Telugu', sans-serif;
+  line-height: 1.8 !important;
 }
 
 .material-symbols-outlined {
@@ -84,4 +94,18 @@ body {
 .custom-scrollbar::-webkit-scrollbar-thumb {
   background: #e0e3e5;
   border-radius: 10px;
+}
+
+.icon-container {
+  flex-shrink: 0;
+}
+
+/* Magically prevent any direct wrapper of an icon from squashing when translated text expands */
+div:has(> .material-symbols-outlined) {
+  flex-shrink: 0;
+}
+
+p, span, h1, h2, h3, h4, h5, h6 {
+  word-break: break-word;
+  hyphens: auto;
 }

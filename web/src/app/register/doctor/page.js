@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { ThemeToggle } from "@/components/ThemeToggle";
+import { LanguageToggle } from "@/components/LanguageToggle";
 
 const staggerContainer = {
   hidden: { opacity: 0 },
@@ -22,6 +23,7 @@ const fadeUp = {
 export default function DoctorSignup() {
   const [formData, setFormData] = useState({
     name: "",
+    email: "",
     specialization: "",
     experience: "",
     hospitalName: "",
@@ -39,6 +41,7 @@ export default function DoctorSignup() {
 
   const isFormValid = 
     formData.name && 
+    formData.email && formData.email.includes("@") &&
     formData.specialization && 
     formData.experience && 
     formData.hospitalName &&
@@ -109,7 +112,10 @@ export default function DoctorSignup() {
           <span className="text-sm font-bold tracking-wide text-slate-600 dark:text-slate-300 group-hover:text-slate-900 dark:group-hover:text-white transition-colors">Back to Home</span>
         </Link>
         <div className="flex items-center gap-4">
-          <ThemeToggle />
+          <div className="flex items-center gap-2">
+            <LanguageToggle />
+            <ThemeToggle />
+          </div>
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-500 to-teal-400 flex items-center justify-center shadow-md">
               <span className="material-symbols-outlined text-white text-sm" style={{ fontVariationSettings: "'FILL' 1" }}>ecg_heart</span>
@@ -202,6 +208,25 @@ export default function DoctorSignup() {
                     )}
                   </motion.div>
                 </div>
+
+                {/* Email Address */}
+                <motion.div variants={fadeUp} className="space-y-1.5">
+                  <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1" htmlFor="email">Email Address</label>
+                  <div className="relative group">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 dark:text-slate-500 pointer-events-none group-focus-within:text-sky-500 transition-colors">
+                      <span className="material-symbols-outlined text-[20px]">mail</span>
+                    </div>
+                    <input
+                      className="w-full h-12 pl-11 pr-4 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500/50 transition-all outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium"
+                      id="email"
+                      placeholder="doctor@hospital.com"
+                      required
+                      type="email"
+                      value={formData.email}
+                      onChange={handleChange}
+                    />
+                  </div>
+                </motion.div>
 
                 {/* Row 2: Specialization & Years Exp. */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
