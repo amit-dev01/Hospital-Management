@@ -58,6 +58,10 @@
     "verify_phone_title": "Verify Phone",
     "otp_sent": "We've sent a 4-digit verification code to",
     "verify_otp": "Verify OTP",
-    "cancel": "Cancel"
+    "cancel": "Cancel",
+    "reg_success": "Registration Successful!",
+    "reg_success_desc": "Your account has been created. Redirecting to login...",
+    "check_email": "Check your email",
+    "check_email_desc": "We've sent a verification link to your email. Please verify to continue."
   }
 }

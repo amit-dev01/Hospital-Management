@@ -55,12 +55,13 @@ export async function signUpPatient(formData) {
     return { error: 'Failed to create user account.' };
   }
 
-  // Insert profile
-  const { error: profileError } = await supabase.from('profiles').insert({
+  // Insert profile (Using upsert to prevent duplicate key errors on retry)
+  const { error: profileError } = await supabase.from('profiles').upsert({
     id: data.user.id,
     role: 'patient',
     full_name: formData.name,
     phone: formData.phone,
+    updated_at: new Date().toISOString(),
   });
 
   if (profileError) {
@@ -68,7 +69,7 @@ export async function signUpPatient(formData) {
   }
 
   // Insert patient-specific data
-  const { error: patientError } = await supabase.from('patients').insert({
+  const { error: patientError } = await supabase.from('patients').upsert({
     id: data.user.id,
     age: parseInt(formData.age),
     gender: formData.gender,
@@ -80,7 +81,12 @@ export async function signUpPatient(formData) {
   }
 
   revalidatePath('/', 'layout');
-  redirect('/patient/dashboard');
+  
+  return { 
+    success: true, 
+    emailVerificationRequired: !data.session,
+    redirectTo: '/login?role=patient&registered=true'
+  };
 }
 
 // ── SIGN UP — DOCTOR ──────────────────────────────────────────────────────────
@@ -106,12 +112,13 @@ export async function signUpDoctor(formData) {
     return { error: 'Failed to create user account.' };
   }
 
-  // Insert profile
-  const { error: profileError } = await supabase.from('profiles').insert({
+  // Insert profile (Using upsert to prevent duplicate key errors on retry)
+  const { error: profileError } = await supabase.from('profiles').upsert({
     id: data.user.id,
     role: 'doctor',
     full_name: formData.name,
     phone: formData.phone,
+    updated_at: new Date().toISOString(),
   });
 
   if (profileError) {
@@ -119,7 +126,7 @@ export async function signUpDoctor(formData) {
   }
 
   // Insert doctor-specific data
-  const { error: doctorError } = await supabase.from('doctors').insert({
+  const { error: doctorError } = await supabase.from('doctors').upsert({
     id: data.user.id,
     specialization: formData.specialization,
     experience_years: parseInt(formData.experience),
@@ -133,7 +140,68 @@ export async function signUpDoctor(formData) {
   }
 
   revalidatePath('/', 'layout');
-  redirect('/doctor/dashboard');
+  
+  return { 
+    success: true, 
+    emailVerificationRequired: !data.session,
+    redirectTo: '/login?role=doctor&registered=true'
+  };
+}
+
+// ── SIGN UP — ADMIN ───────────────────────────────────────────────────────────
+export async function signUpAdmin(formData) {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase.auth.signUp({
+    email: formData.email,
+    password: formData.password,
+    options: {
+      data: {
+        full_name: formData.name,
+        role: 'admin',
+      },
+    },
+  });
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  if (!data.user) {
+    return { error: 'Failed to create user account.' };
+  }
+
+  // Insert profile (Using upsert to prevent duplicate key errors on retry)
+  const { error: profileError } = await supabase.from('profiles').upsert({
+    id: data.user.id,
+    role: 'admin',
+    full_name: formData.name,
+    phone: formData.phone,
+    updated_at: new Date().toISOString(),
+  });
+
+  if (profileError) {
+    return { error: profileError.message };
+  }
+
+  // Insert admin-specific data (Assuming an 'admins' table exists following the project pattern)
+  const { error: adminError } = await supabase.from('admins').upsert({
+    id: data.user.id,
+    department: formData.department,
+    employee_id: formData.employeeId,
+  });
+
+  if (adminError) {
+    console.error('Error inserting into admins table:', adminError);
+  }
+
+  revalidatePath('/', 'layout');
+  
+  return { 
+    success: true, 
+    emailVerificationRequired: !data.session,
+    redirectTo: '/login?role=admin&registered=true'
+  };
 }
 
 // ── SIGN OUT ──────────────────────────────────────────────────────────────────

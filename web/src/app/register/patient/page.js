@@ -30,6 +30,7 @@ export default function PatientSignup() {
   const [otp, setOtp] = useState(["", "", "", ""]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState(false);
   const router = useRouter();
 
   const isFormValid =
@@ -70,29 +71,29 @@ export default function PatientSignup() {
     setLoading(true);
     setError("");
 
-    const supabase = createClient();
-    const { data, error: authError } = await supabase.auth.signUp({
-      email: formData.email,
-      password: formData.password,
-      options: { data: { full_name: formData.name, role: "patient" } },
-    });
-
-    if (authError) { setError(authError.message); setLoading(false); return; }
-    if (!data.user) { setError("Failed to create account. Please try again."); setLoading(false); return; }
-
-    // Insert profile
-    const { error: profileError } = await supabase.from("profiles").insert({
-      id: data.user.id, role: "patient", full_name: formData.name, phone: formData.phone,
-    });
-    if (profileError) { setError(profileError.message); setLoading(false); return; }
-
-    // Insert patient data
-    const { error: patientError } = await supabase.from("patients").insert({
-      id: data.user.id, age: parseInt(formData.age), gender: formData.gender, blood_group: formData.bloodGroup,
-    });
-    if (patientError) { setError(patientError.message); setLoading(false); return; }
-
-    router.push("/patient/dashboard");
+    try {
+      const { signUpPatient } = await import("@/app/actions/auth");
+      const res = await signUpPatient(formData);
+      
+      if (res?.error) {
+        setError(res.error);
+        setLoading(false);
+      } else if (res?.success) {
+        setSuccess(true);
+        if (!res.emailVerificationRequired) {
+          setTimeout(() => {
+            router.push(res.redirectTo || "/login?role=patient");
+          }, 2000);
+        } else {
+          setLoading(false);
+        }
+      }
+    } catch (err) {
+      if (err.message !== "NEXT_REDIRECT") {
+        setError("An unexpected error occurred. Please try again.");
+        setLoading(false);
+      }
+    }
   };
 
   return (
@@ -131,7 +132,35 @@ export default function PatientSignup() {
           <div className="bg-white/80 dark:bg-slate-900/60 backdrop-blur-xl border border-slate-200 dark:border-slate-800/60 rounded-3xl p-8 shadow-xl dark:shadow-2xl relative overflow-hidden">
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-emerald-500 to-teal-400" />
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            {success ? (
+              <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center py-8"
+              >
+                <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 mb-6">
+                  <span className="material-symbols-outlined text-4xl">
+                    {success && !error ? "check_circle" : "mark_email_read"}
+                  </span>
+                </div>
+                <h2 className="text-2xl font-black text-slate-900 dark:text-white mb-4">
+                  {success && !error ? t("reg_success") : t("check_email")}
+                </h2>
+                <p className="text-slate-600 dark:text-slate-400 font-medium mb-8">
+                  {success && !error ? (
+                    <>{t("reg_success_desc")}</>
+                  ) : (
+                    <>
+                      {t("check_email_desc")} (<strong className="text-slate-900 dark:text-white">{formData.email}</strong>)
+                    </>
+                  )}
+                </p>
+                <Link href="/login?role=patient" className="inline-flex items-center gap-2 font-bold text-emerald-600 dark:text-emerald-400 hover:underline">
+                  Go to Login <span className="material-symbols-outlined text-sm">arrow_forward</span>
+                </Link>
+              </motion.div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-5">
               {error && (
                 <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} className="flex items-center gap-2 px-4 py-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400">
                   <span className="material-symbols-outlined text-[18px]">error</span>
@@ -242,6 +271,7 @@ export default function PatientSignup() {
                 </motion.div>
               </motion.div>
             </form>
+            )}
 
             <div className="mt-8 flex items-center justify-center gap-2 border-t border-slate-200 dark:border-slate-800/60 pt-6">
               <span className="text-sm font-medium text-slate-500 dark:text-slate-400">{t("already_registered")}</span>
