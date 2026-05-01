@@ -14,7 +14,7 @@
     "enter_portal": "Enter Portal"
   },
   "PatientDashboard": {
-    "greeting": "Good Morning, Johnathan!",
+    "greeting": "Good Morning",
     "overview": "Here is your health overview for today.",
     "book_appointment": "Book Appointment",
     "upcoming_visit": "Upcoming Visit",
