@@ -48,6 +48,9 @@ export async function signUpPatient(formData) {
   });
 
   if (error) {
+    if (error.message.includes('already registered')) {
+      return { error: 'Email already exists.' };
+    }
     return { error: error.message };
   }
 
@@ -92,7 +95,20 @@ export async function signUpPatient(formData) {
 // ── SIGN UP — DOCTOR ──────────────────────────────────────────────────────────
 export async function signUpDoctor(formData) {
   const supabase = await createClient();
+  
+  // 1. Check if license number already exists (using RPC to bypass RLS)
+  const { data: licenseExists, error: rpcError } = await supabase
+    .rpc('check_license_exists', { license_num: formData.licenseNumber });
 
+  if (rpcError) {
+    console.error('RPC Error:', rpcError);
+  }
+
+  if (licenseExists) {
+    return { error: 'License ID already exists.' };
+  }
+
+  // 2. Proceed with Auth Sign Up
   const { data, error } = await supabase.auth.signUp({
     email: formData.email,
     password: formData.password,
@@ -105,6 +121,9 @@ export async function signUpDoctor(formData) {
   });
 
   if (error) {
+    if (error.message.includes('already registered')) {
+      return { error: 'Email already exists.' };
+    }
     return { error: error.message };
   }
 
@@ -112,7 +131,7 @@ export async function signUpDoctor(formData) {
     return { error: 'Failed to create user account.' };
   }
 
-  // Insert profile (Using upsert to prevent duplicate key errors on retry)
+  // 3. Insert profile
   const { error: profileError } = await supabase.from('profiles').upsert({
     id: data.user.id,
     role: 'doctor',
@@ -125,7 +144,7 @@ export async function signUpDoctor(formData) {
     return { error: profileError.message };
   }
 
-  // Insert doctor-specific data
+  // 4. Insert doctor-specific data
   const { error: doctorError } = await supabase.from('doctors').upsert({
     id: data.user.id,
     specialization: formData.specialization,
@@ -136,6 +155,9 @@ export async function signUpDoctor(formData) {
   });
 
   if (doctorError) {
+    if (doctorError.message?.includes('doctors_license_number_key')) {
+      return { error: 'License ID already exists.' };
+    }
     return { error: doctorError.message };
   }
 
@@ -151,7 +173,20 @@ export async function signUpDoctor(formData) {
 // ── SIGN UP — ADMIN ───────────────────────────────────────────────────────────
 export async function signUpAdmin(formData) {
   const supabase = await createClient();
+  
+  // 1. Check if employee ID already exists (using RPC to bypass RLS)
+  const { data: employeeExists, error: rpcError } = await supabase
+    .rpc('check_employee_id_exists', { emp_id: formData.employeeId });
 
+  if (rpcError) {
+    console.error('RPC Error:', rpcError);
+  }
+
+  if (employeeExists) {
+    return { error: 'Employee ID already exists.' };
+  }
+
+  // 2. Proceed with Auth Sign Up
   const { data, error } = await supabase.auth.signUp({
     email: formData.email,
     password: formData.password,
@@ -164,6 +199,9 @@ export async function signUpAdmin(formData) {
   });
 
   if (error) {
+    if (error.message.includes('already registered')) {
+      return { error: 'Email already exists.' };
+    }
     return { error: error.message };
   }
 
@@ -171,7 +209,7 @@ export async function signUpAdmin(formData) {
     return { error: 'Failed to create user account.' };
   }
 
-  // Insert profile (Using upsert to prevent duplicate key errors on retry)
+  // 3. Insert profile
   const { error: profileError } = await supabase.from('profiles').upsert({
     id: data.user.id,
     role: 'admin',
@@ -184,7 +222,7 @@ export async function signUpAdmin(formData) {
     return { error: profileError.message };
   }
 
-  // Insert admin-specific data (Assuming an 'admins' table exists following the project pattern)
+  // 4. Insert admin-specific data
   const { error: adminError } = await supabase.from('admins').upsert({
     id: data.user.id,
     department: formData.department,
@@ -192,7 +230,10 @@ export async function signUpAdmin(formData) {
   });
 
   if (adminError) {
-    console.error('Error inserting into admins table:', adminError);
+    if (adminError.message?.includes('admins_employee_id_key')) {
+      return { error: 'Employee ID already exists.' };
+    }
+    return { error: adminError.message };
   }
 
   revalidatePath('/', 'layout');

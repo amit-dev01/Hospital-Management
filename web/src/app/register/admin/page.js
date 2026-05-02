@@ -212,7 +212,7 @@ export default function AdminSignup() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {/* Full Name */}
                   <motion.div variants={fadeUp} className="space-y-1.5">
-                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1" htmlFor="name">Full Name</label>
+                    <label className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 ml-1" htmlFor="name">Hospital Name</label>
                     <div className="relative group">
                       <div className="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400 dark:text-slate-500 pointer-events-none group-focus-within:text-purple-500 transition-colors">
                         <span className="material-symbols-outlined text-[20px]">badge</span>
@@ -220,7 +220,7 @@ export default function AdminSignup() {
                       <input
                         className="w-full h-12 pl-11 pr-4 bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl text-sm text-slate-900 dark:text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all outline-none placeholder:text-slate-400 dark:placeholder:text-slate-600 font-medium"
                         id="name"
-                        placeholder="Jane Smith"
+                        placeholder="e.g. City General Hospital"
                         required
                         type="text"
                         value={formData.name}
