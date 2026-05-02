@@ -77,13 +77,7 @@ export default function HomeContent({ userProfile }) {
             {t("subtitle")}
           </motion.p>
 
-          {!userProfile && (
-            <motion.div variants={fadeUp} className="flex flex-wrap justify-center gap-4">
-              <Link href="/login" className="bg-slate-900 dark:bg-white text-white dark:text-slate-900 px-8 py-4 rounded-2xl font-black text-lg hover:scale-105 transition-all shadow-xl shadow-black/10">
-                Get Started
-              </Link>
-            </motion.div>
-          )}
+
         </motion.div>
 
         {/* Quick Portals - Bento Grid */}
