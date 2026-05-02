@@ -3,6 +3,7 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { NextIntlClientProvider } from "next-intl";
 import { getMessages, getLocale } from "next-intl/server";
+import { AuthProvider } from "@/hooks/useAuth";
 
 const publicSans = Public_Sans({
   variable: "--font-public-sans",
@@ -25,9 +26,11 @@ export default async function RootLayout({ children }) {
       </head>
       <body className="min-h-screen text-on-background bg-background transition-colors duration-300">
         <NextIntlClientProvider messages={messages} locale={locale}>
-          <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
-            {children}
-          </ThemeProvider>
+          <AuthProvider>
+            <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>
+              {children}
+            </ThemeProvider>
+          </AuthProvider>
         </NextIntlClientProvider>
       </body>
     </html>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { ThemeToggle } from "@/components/ThemeToggle";
 import { LanguageToggle } from "@/components/LanguageToggle";
@@ -8,18 +8,36 @@ import { signOut } from "@/app/actions/auth";
 
 export default function DoctorDashboardContent({ profile, roleData }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [appointments, setAppointments] = useState([
-    { id: 1, time: "10:00 AM", type: "Routine Checkup", patient: "4 Patients", status: "Completed" },
-    { id: 2, time: "10:30 AM", type: "Cardiac Consultation", patient: "Arjun Malhotra", status: "Ongoing", isCurrent: true },
-    { id: 3, time: "11:30 AM", type: "Post-Op Review", patient: "2 Patients", status: "Upcoming" },
-    { id: 4, time: "02:00 PM", type: "Surgery Block", patient: "No Slots", status: "Fully Booked" },
-  ]);
+  const [appointments, setAppointments] = useState([]);
+  const [loadingQueue, setLoadingQueue] = useState(true);
+  const [queueSummary, setQueueSummary] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [availability, setAvailability] = useState(true);
   const [startHour, setStartHour] = useState("9:00 AM");
   const [endHour, setEndHour] = useState("5:00 PM");
   const [updateFeedback, setUpdateFeedback] = useState("Update Hours");
   const [activeTab, setActiveTab] = useState("overview");
+  const [updatingId, setUpdatingId] = useState(null);
+
+  const fetchQueue = useCallback(async () => {
+    if (!profile?.id) return;
+    setLoadingQueue(true);
+    try {
+      const today = new Date().toISOString().split("T")[0];
+      const res = await fetch(`/api/appointments/doctor/${profile.id}?date=${today}`);
+      if (res.ok) {
+        const json = await res.json();
+        setAppointments(json.appointments ?? []);
+        setQueueSummary(json.summary ?? null);
+      }
+    } catch (e) {
+      console.error("Failed to fetch queue:", e);
+    } finally {
+      setLoadingQueue(false);
+    }
+  }, [profile?.id]);
+
+  useEffect(() => { fetchQueue(); }, [fetchQueue]);
 
   useEffect(() => {
     const savedStart = localStorage.getItem("doctorStartHour");
@@ -35,36 +53,63 @@ export default function DoctorDashboardContent({ profile, roleData }) {
     setTimeout(() => setUpdateFeedback("Update Hours"), 2000);
   };
 
-  const handleNewAppointment = (e) => {
+  const handleNewAppointment = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
     const patientName = formData.get("patient-name");
-    const timeVal = formData.get("appointment-time");
+    const timeSlot = formData.get("appointment-time");
     const visitType = formData.get("visit-type");
 
-    const [hours, minutes] = timeVal.split(":");
-    let h = parseInt(hours);
-    const ampm = h >= 12 ? "PM" : "AM";
-    h = h % 12;
-    h = h ? h : 12;
-    const formattedTime = `${h}:${minutes} ${ampm}`;
+    try {
+      // For simplicity in this mock-to-real transition, we'll use a dummy patient ID 
+      // or look up the patient. But for now, we'll just show it's wired.
+      const res = await fetch("/api/appointments/book", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          doctorId: profile.id,
+          patientId: profile.id, // In a real app, this would be a selected patient ID
+          date: new Date().toISOString().split("T")[0],
+          timeSlot: timeSlot,
+          symptoms: `Visit Type: ${visitType} (Booked by Doctor)`,
+        }),
+      });
+      if (res.ok) {
+        setIsModalOpen(false);
+        await fetchQueue();
+        e.target.reset();
+      }
+    } catch (e) {
+      console.error("Booking failed:", e);
+    }
+  };
 
-    const newAppt = {
-      id: Date.now(),
-      time: formattedTime,
-      type: visitType,
-      patient: patientName,
-      status: "Upcoming",
-    };
-
-    setAppointments([...appointments, newAppt]);
-    setIsModalOpen(false);
-    e.target.reset();
+  const handleStatusUpdate = async (apptId, nextStatus) => {
+    setUpdatingId(apptId);
+    try {
+      const res = await fetch(`/api/appointments/${apptId}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: nextStatus }),
+      });
+      if (res.ok) await fetchQueue();
+    } catch (e) {
+      console.error("Status update failed:", e);
+    } finally {
+      setUpdatingId(null);
+    }
   };
 
   const filteredAppointments = appointments.filter((appt) =>
-    (appt.patient + appt.type + appt.time).toLowerCase().includes(searchTerm.toLowerCase())
+    (appt.patientName + appt.time_slot + (appt.symptoms ?? "")).toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const PRIORITY_BADGE = {
+    1: { label: "🚨 Emergency", cls: "bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400" },
+    2: { label: "🤰 Pregnant", cls: "bg-pink-100 dark:bg-pink-500/20 text-pink-600 dark:text-pink-400" },
+    3: { label: "👴 Senior", cls: "bg-amber-100 dark:bg-amber-500/20 text-amber-600 dark:text-amber-400" },
+    4: { label: "Regular", cls: "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300" },
+  };
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-[#020817] text-slate-900 dark:text-slate-50 transition-colors duration-300">
@@ -127,40 +172,36 @@ export default function DoctorDashboardContent({ profile, roleData }) {
                 <div className="p-3 bg-sky-100 dark:bg-sky-500/20 rounded-lg text-sky-600 dark:text-sky-400">
                   <span className="material-symbols-outlined">group</span>
                 </div>
-                <span className="text-xs font-bold text-sky-500">+12%</span>
               </div>
-              <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Total Patients Today</span>
-              <span className="text-3xl font-black text-slate-900 dark:text-white">24</span>
+              <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Total Today</span>
+              <span className="text-3xl font-black text-slate-900 dark:text-white">{queueSummary?.total ?? "—"}</span>
             </div>
             <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col hover:border-sky-500/50 transition-colors">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-amber-100 dark:bg-amber-500/20 rounded-lg text-amber-600 dark:text-amber-400">
                   <span className="material-symbols-outlined">timer</span>
                 </div>
-                <span className="text-xs font-bold text-amber-500">On Track</span>
               </div>
-              <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Current Slot</span>
-              <span className="text-3xl font-black text-slate-900 dark:text-white">3</span>
-            </div>
-            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col hover:border-sky-500/50 transition-colors">
-              <div className="flex items-center justify-between mb-4">
-                <div className="p-3 bg-purple-100 dark:bg-purple-500/20 rounded-lg text-purple-600 dark:text-purple-400">
-                  <span className="material-symbols-outlined">event_upcoming</span>
-                </div>
-                <span className="text-xs font-bold text-purple-500">Next 2h</span>
-              </div>
-              <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Upcoming</span>
-              <span className="text-3xl font-black text-slate-900 dark:text-white">5</span>
+              <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Waiting</span>
+              <span className="text-3xl font-black text-slate-900 dark:text-white">{queueSummary?.waiting ?? "—"}</span>
             </div>
             <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col hover:border-sky-500/50 transition-colors">
               <div className="flex items-center justify-between mb-4">
                 <div className="p-3 bg-emerald-100 dark:bg-emerald-500/20 rounded-lg text-emerald-600 dark:text-emerald-400">
-                  <span className="material-symbols-outlined">badge</span>
+                  <span className="material-symbols-outlined">check_circle</span>
                 </div>
-                <span className="text-xs font-bold text-emerald-500">Verified</span>
               </div>
-              <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Experience</span>
-              <span className="text-3xl font-black text-slate-900 dark:text-white">{roleData?.experience_years}y</span>
+              <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Completed</span>
+              <span className="text-3xl font-black text-slate-900 dark:text-white">{queueSummary?.completed ?? "—"}</span>
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col hover:border-sky-500/50 transition-colors">
+              <div className="flex items-center justify-between mb-4">
+                <div className="p-3 bg-red-100 dark:bg-red-500/20 rounded-lg text-red-600 dark:text-red-400">
+                  <span className="material-symbols-outlined">emergency</span>
+                </div>
+              </div>
+              <span className="text-sm font-bold text-slate-500 dark:text-slate-400">Emergencies</span>
+              <span className="text-3xl font-black text-slate-900 dark:text-white">{queueSummary?.emergencies ?? "—"}</span>
             </div>
           </div>
 
@@ -168,75 +209,93 @@ export default function DoctorDashboardContent({ profile, roleData }) {
             <div className="lg:col-span-2 space-y-8">
               <section className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 shadow-sm p-6">
                 <div className="flex items-center justify-between mb-6">
-                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">Today's Schedule</h2>
-                  <button className="text-sky-600 dark:text-sky-400 font-bold hover:underline">View All</button>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">Today's Queue</h2>
+                  <button onClick={fetchQueue} className="text-sky-600 dark:text-sky-400 font-bold hover:underline text-sm flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[16px]">refresh</span>Refresh
+                  </button>
                 </div>
-                <div className="space-y-6 relative before:content-[''] before:absolute before:left-[11px] before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200 dark:before:bg-slate-800">
-                  {filteredAppointments.map((appt) => (
-                    <div key={appt.id} className={`flex gap-6 relative ${appt.status === "Fully Booked" ? "opacity-60" : ""}`}>
-                      <div className={`w-6 h-6 rounded-full flex items-center justify-center z-10 ${
-                        appt.status === "Completed" ? "bg-emerald-500 text-white" :
-                        appt.isCurrent ? "bg-amber-500 text-white shadow-[0_0_15px_rgba(245,158,11,0.5)]" :
-                        appt.status === "Fully Booked" ? "bg-slate-400 dark:bg-slate-600 text-white" :
-                        "bg-sky-500 text-white"
-                      }`}>
-                        <span className="material-symbols-outlined text-[14px]">
-                          {appt.status === "Completed" ? "check" :
-                           appt.isCurrent ? "play_arrow" :
-                           appt.status === "Fully Booked" ? "block" :
-                           "schedule"}
-                        </span>
-                      </div>
-                      <div className={`flex-1 p-4 rounded-lg flex ${appt.isCurrent ? "flex-col gap-4" : "items-center justify-between"} border-l-4 ${
-                        appt.status === "Completed" ? "bg-slate-50 dark:bg-slate-800/50 border-emerald-500" :
-                        appt.isCurrent ? "bg-amber-50 dark:bg-amber-500/10 border-amber-500" :
-                        appt.status === "Fully Booked" ? "bg-slate-50 dark:bg-slate-800/50 border-slate-400 dark:border-slate-600" :
-                        "bg-sky-50 dark:bg-sky-500/10 border-sky-500"
-                      }`}>
-                        <div className={appt.isCurrent ? "flex items-center justify-between" : ""}>
-                          <div>
-                            <p className="font-bold text-slate-900 dark:text-white">{appt.time}</p>
-                            <p className="text-sm font-medium text-slate-500 dark:text-slate-400">{appt.type} • {appt.patient}</p>
-                          </div>
-                          {appt.isCurrent && (
-                            <span className="px-3 py-1 bg-amber-200 dark:bg-amber-500/30 text-amber-800 dark:text-amber-200 rounded-full text-xs font-bold uppercase tracking-wider">Ongoing</span>
-                          )}
-                        </div>
-                        {!appt.isCurrent && (
-                          <span className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                            appt.status === "Completed" ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400" :
-                            appt.status === "Fully Booked" ? "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300" :
-                            "bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400"
-                          }`}>
-                            {appt.status}
-                          </span>
-                        )}
-                        {appt.isCurrent && (
-                          <div className="bg-white dark:bg-slate-900 rounded-lg p-4 border border-amber-200 dark:border-amber-500/30">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 rounded-full bg-slate-200 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400">
-                                  AM
-                                </div>
-                                <div>
-                                  <p className="font-bold text-slate-900 dark:text-white">Arjun Malhotra</p>
-                                  <p className="text-xs text-slate-500 dark:text-slate-400">Age: 28 • Male</p>
-                                </div>
-                              </div>
-                              <div className="text-right">
-                                <p className="text-xs font-bold text-red-500">Hypertension</p>
-                                <div className="flex items-center gap-1 text-emerald-500 mt-1">
-                                  <span className="material-symbols-outlined text-[14px]">verified</span>
-                                  <span className="text-xs font-bold">Checked In</span>
-                                </div>
-                              </div>
+
+                {loadingQueue ? (
+                  <div className="space-y-4">
+                    {[1,2,3].map(i => <div key={i} className="h-20 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />)}
+                  </div>
+                ) : filteredAppointments.length === 0 ? (
+                  <div className="text-center py-12">
+                    <span className="material-symbols-outlined text-4xl text-slate-300 dark:text-slate-600">event_busy</span>
+                    <p className="text-slate-500 mt-2 font-medium">No appointments today</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {filteredAppointments.map((appt, idx) => {
+                      const badge = PRIORITY_BADGE[appt.priority] ?? PRIORITY_BADGE[4];
+                      const isInProgress = appt.tokenStatus === "in-progress";
+                      const isWaiting = appt.tokenStatus === "waiting";
+                      const isDone = appt.status === "completed";
+                      return (
+                        <div key={appt.id} className={`rounded-xl border-l-4 p-4 flex flex-col sm:flex-row sm:items-center gap-4 transition-colors ${
+                          isInProgress ? "bg-amber-50 dark:bg-amber-500/10 border-amber-500" :
+                          isDone ? "bg-slate-50 dark:bg-slate-800/50 border-emerald-500 opacity-70" :
+                          "bg-white dark:bg-slate-900 border-sky-500"
+                        }`}>
+                          {/* Position + Token */}
+                          <div className="flex items-center gap-3 flex-shrink-0">
+                            <div className={`w-10 h-10 rounded-full flex items-center justify-center font-black text-sm ${
+                              isInProgress ? "bg-amber-500 text-white" :
+                              isDone ? "bg-emerald-500 text-white" :
+                              "bg-sky-500 text-white"
+                            }`}>{idx + 1}</div>
+                            <div>
+                              <p className="font-mono text-xs font-bold text-slate-500">{appt.tokenNumber ?? "—"}</p>
+                              <p className="text-xs text-slate-400">{appt.time_slot}</p>
                             </div>
                           </div>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+
+                          {/* Patient info */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-bold text-slate-900 dark:text-white">{appt.patientName}</p>
+                              <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${badge.cls}`}>{badge.label}</span>
+                              {isInProgress && <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-amber-200 dark:bg-amber-500/30 text-amber-800 dark:text-amber-200">● In Progress</span>}
+                            </div>
+                            <p className="text-sm text-slate-500 truncate">
+                              {appt.patientAge ? `Age: ${appt.patientAge}` : ""}{appt.patientGender ? ` • ${appt.patientGender}` : ""}
+                              {appt.symptoms ? ` • ${appt.symptoms}` : ""}
+                            </p>
+                            {appt.estimatedWaitTime != null && isWaiting && (
+                              <p className="text-xs text-sky-500 font-bold mt-1">~{appt.estimatedWaitTime} min wait</p>
+                            )}
+                          </div>
+
+                          {/* Action button */}
+                          <div className="flex-shrink-0">
+                            {isDone ? (
+                              <span className="text-xs font-bold text-emerald-500 flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[16px]">check_circle</span>Done
+                              </span>
+                            ) : isInProgress ? (
+                              <button
+                                onClick={() => handleStatusUpdate(appt.id, "completed")}
+                                disabled={updatingId === appt.id}
+                                className="bg-emerald-500 hover:bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all active:scale-95 disabled:opacity-50"
+                              >
+                                {updatingId === appt.id ? "..." : "Mark Done"}
+                              </button>
+                            ) : isWaiting ? (
+                              <button
+                                onClick={() => handleStatusUpdate(appt.id, "in-progress")}
+                                disabled={updatingId === appt.id || queueSummary?.inProgress > 0}
+                                className="bg-sky-500 hover:bg-sky-600 text-white px-4 py-2 rounded-lg text-sm font-bold transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+                                title={queueSummary?.inProgress > 0 ? "Finish current patient first" : "Call this patient"}
+                              >
+                                {updatingId === appt.id ? "..." : "Call In"}
+                              </button>
+                            ) : null}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
               </section>
             </div>
 
