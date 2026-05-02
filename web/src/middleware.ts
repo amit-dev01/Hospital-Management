@@ -1,10 +1,35 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createServerClient } from '@supabase/ssr';
-import {
-  ALL_PROTECTED_PREFIXES,
-  ROLE_ROUTE_CONFIG,
-  type UserRole,
-} from '@/types/auth';
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+type UserRole = 'patient' | 'doctor' | 'admin';
+
+interface RoleRouteConfig {
+  prefix: string;
+  loginPath: string;
+  defaultDashboard: string;
+}
+
+// ── Per-role route configuration (inlined to avoid Edge import issues) ─────────
+const ROLE_ROUTE_CONFIG: Record<UserRole, RoleRouteConfig> = {
+  patient: {
+    prefix: '/patient',
+    loginPath: '/login?role=patient',
+    defaultDashboard: '/patient/dashboard',
+  },
+  doctor: {
+    prefix: '/doctor',
+    loginPath: '/login?role=doctor',
+    defaultDashboard: '/doctor/dashboard',
+  },
+  admin: {
+    prefix: '/hospital',
+    loginPath: '/login?role=admin',
+    defaultDashboard: '/hospital/dashboard',
+  },
+};
+
+const ALL_PROTECTED_PREFIXES = Object.values(ROLE_ROUTE_CONFIG).map((c) => c.prefix);
 
 const AUTH_ROUTES = ['/login', '/register'];
 

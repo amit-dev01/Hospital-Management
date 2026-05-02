@@ -36,7 +36,8 @@ export async function getAvailableSlots(
   bookedCount: number;
   maxPatients: number;
 }> {
-  const dayOfWeek = new Date(date).getDay(); // 0=Sun … 6=Sat
+  const [year, month, day] = date.split('-').map(Number);
+  const dayOfWeek = new Date(year, month - 1, day).getDay(); // 0=Sun … 6=Sat
 
   // 1. Fetch doctor's schedule for that day
   const { data: avail, error: availError } = await supabase

@@ -13,9 +13,10 @@ function getNext7Days() {
   for (let i = 0; i < 7; i++) {
     const d = new Date();
     d.setDate(d.getDate() + i);
+    const localDate = new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().split("T")[0];
     days.push({
       label: i === 0 ? "TODAY" : dayNames[d.getDay()],
-      date: d.toISOString().split("T")[0],
+      date: localDate,
       display: d.getDate(),
     });
   }
@@ -46,6 +47,7 @@ export default function BookAppointment() {
   const [loadingSlots, setLoadingSlots] = useState(false);
   const [loadingDoctors, setLoadingDoctors] = useState(false);
   const [currentUserId, setCurrentUserId] = useState(null);
+  const [selectedDepartment, setSelectedDepartment] = useState("");
 
   // Get current user ID
   useEffect(() => {
@@ -63,7 +65,9 @@ export default function BookAppointment() {
     setAvailableSlots([]);
     setSelectedTime(null);
     try {
-      const res = await fetch(`/api/doctors/available?date=${selectedDate}`);
+      let url = `/api/doctors/available?date=${selectedDate}`;
+      if (selectedDepartment) url += `&specialization=${encodeURIComponent(selectedDepartment)}`;
+      const res = await fetch(url);
       if (res.ok) {
         const json = await res.json();
         setDoctors(json.doctors ?? []);
@@ -77,7 +81,7 @@ export default function BookAppointment() {
 
   useEffect(() => {
     if (bookingMode === "schedule" && step === 2) fetchDoctors();
-  }, [bookingMode, step, fetchDoctors]);
+  }, [bookingMode, step, selectedDate, selectedDepartment, fetchDoctors]);
 
   // Fetch slots when doctor is selected
   const fetchSlots = useCallback(async () => {
@@ -320,7 +324,21 @@ export default function BookAppointment() {
 
             {/* Doctor Selection */}
             <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-              <h3 className="font-bold text-lg mb-4">Select a Doctor</h3>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-4">
+                <h3 className="font-bold text-lg">Select a Doctor</h3>
+                <select 
+                  value={selectedDepartment}
+                  onChange={(e) => setSelectedDepartment(e.target.value)}
+                  className="bg-slate-50 dark:bg-slate-950/50 border border-slate-200 dark:border-slate-800 rounded-xl px-4 py-2 text-sm font-medium outline-none focus:ring-2 focus:ring-sky-500/50"
+                >
+                  <option value="">All Departments</option>
+                  <option value="Cardiology">Cardiology</option>
+                  <option value="Neurology">Neurology</option>
+                  <option value="Pediatrics">Pediatrics</option>
+                  <option value="Orthopedics">Orthopedics</option>
+                  <option value="General Practice">General Practice</option>
+                </select>
+              </div>
               {loadingDoctors ? (
                 <div className="space-y-3">
                   {[1,2,3].map(i => <div key={i} className="h-20 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />)}
