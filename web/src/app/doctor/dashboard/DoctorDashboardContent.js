@@ -367,55 +367,185 @@ export default function DoctorDashboardContent({ profile, roleData }) {
         </div>
         )}
 
-        {/* Patients Tab */}
+        {/* Schedule Tab */}
+        {activeTab === "schedule" && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="mb-8 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-black text-slate-900 dark:text-white">Schedule</h1>
+                <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">View and manage appointments by date</p>
+              </div>
+              <input
+                type="date"
+                defaultValue={new Date().toISOString().split('T')[0]}
+                onChange={async (e) => {
+                  setLoadingQueue(true);
+                  try {
+                    const res = await fetch(`/api/appointments/doctor/${profile?.id}?date=${e.target.value}`);
+                    if (res.ok) {
+                      const json = await res.json();
+                      setAppointments(json.appointments ?? []);
+                      setQueueSummary(json.summary ?? null);
+                    }
+                  } catch (err) { console.error(err); }
+                  finally { setLoadingQueue(false); }
+                }}
+                className="h-12 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl px-4 font-medium focus:border-sky-500 outline-none text-slate-900 dark:text-white"
+              />
+            </div>
+
+            {/* Summary Cards */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+              {[
+                { label: 'Total', value: queueSummary?.total ?? '—', color: 'sky' },
+                { label: 'Waiting', value: queueSummary?.waiting ?? '—', color: 'amber' },
+                { label: 'Completed', value: queueSummary?.completed ?? '—', color: 'emerald' },
+                { label: 'Emergencies', value: queueSummary?.emergencies ?? '—', color: 'red' },
+              ].map(({ label, value, color }) => (
+                <div key={label} className={`bg-${color}-50 dark:bg-${color}-500/10 border border-${color}-100 dark:border-${color}-500/20 rounded-2xl p-5`}>
+                  <p className={`text-xs font-bold text-${color}-500 uppercase tracking-wider mb-1`}>{label}</p>
+                  <p className={`text-3xl font-black text-${color}-700 dark:text-${color}-400`}>{value}</p>
+                </div>
+              ))}
+            </div>
+
+            {/* Appointment list for selected date */}
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
+              {loadingQueue ? (
+                <div className="p-8 space-y-4">
+                  {[1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />)}
+                </div>
+              ) : appointments.length === 0 ? (
+                <div className="text-center py-16">
+                  <span className="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-600">event_busy</span>
+                  <p className="text-slate-500 mt-3 font-medium">No appointments on this date</p>
+                </div>
+              ) : (
+                <table className="w-full text-left">
+                  <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
+                    <tr>
+                      <th className="px-6 py-4">Token</th>
+                      <th className="px-6 py-4">Patient</th>
+                      <th className="px-6 py-4">Time</th>
+                      <th className="px-6 py-4">Priority</th>
+                      <th className="px-6 py-4">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {appointments.map((appt) => {
+                      const badge = PRIORITY_BADGE[appt.priority] ?? PRIORITY_BADGE[4];
+                      return (
+                        <tr key={appt.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                          <td className="px-6 py-4 font-mono text-sm font-bold text-slate-600 dark:text-slate-400">{appt.tokenNumber ?? '—'}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-sky-100 dark:bg-sky-800 flex items-center justify-center font-bold text-sky-600 dark:text-sky-400 text-xs">
+                                {(appt.patientName ?? '??').split(' ').map(n => n[0]).join('').substring(0,2)}
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-900 dark:text-white">{appt.patientName ?? 'Unknown'}</p>
+                                {appt.patientAge && <p className="text-xs text-slate-400">Age: {appt.patientAge} • {appt.patientGender}</p>}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-slate-500">{appt.time_slot}</td>
+                          <td className="px-6 py-4">
+                            <span className={`text-xs font-bold px-2 py-1 rounded-full ${badge.cls}`}>{badge.label}</span>
+                          </td>
+                          <td className="px-6 py-4">
+                            <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                              appt.status === 'completed' ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400' :
+                              appt.status === 'cancelled' ? 'bg-red-100 dark:bg-red-500/20 text-red-600 dark:text-red-400' :
+                              appt.status === 'in-progress' ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400' :
+                              'bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400'
+                            }`}>{appt.status}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Patients Tab — derived from all appointments this doctor has had */}
         {activeTab === "patients" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
             <div className="mb-8 flex justify-between items-center">
-              <h1 className="text-3xl font-black text-slate-900 dark:text-white">My Patients</h1>
+              <h1 className="text-3xl font-black text-slate-900 dark:text-white">Today's Patients</h1>
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
-                <input type="text" placeholder="Search patients..." className="pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium w-[300px] outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500" />
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  placeholder="Search patients..."
+                  className="pl-10 pr-4 py-2.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl text-sm font-medium w-[300px] outline-none focus:border-sky-500 focus:ring-1 focus:ring-sky-500"
+                />
               </div>
             </div>
-            
+
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
-              <table className="w-full text-left">
-                <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
-                  <tr>
-                    <th className="px-6 py-4">Patient Name</th>
-                    <th className="px-6 py-4">ID</th>
-                    <th className="px-6 py-4">Last Visit</th>
-                    <th className="px-6 py-4">Condition</th>
-                    <th className="px-6 py-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                  {[
-                    { name: "Arjun Malhotra", id: "PT-94028", visit: "Today, 10:30 AM", cond: "Hypertension", color: "red" },
-                    { name: "Sarah Jenkins", id: "PT-83921", visit: "Oct 12, 2023", cond: "Routine Checkup", color: "emerald" },
-                    { name: "Michael Chang", id: "PT-10294", visit: "Sep 28, 2023", cond: "Post-Op Review", color: "amber" },
-                  ].map((p, i) => (
-                    <tr key={i} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-3">
-                          <div className="w-8 h-8 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center font-bold text-slate-600 dark:text-slate-400 text-xs">
-                            {p.name.split(' ').map(n=>n[0]).join('')}
-                          </div>
-                          <span className="font-bold text-slate-900 dark:text-white">{p.name}</span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-sm font-medium text-slate-500">{p.id}</td>
-                      <td className="px-6 py-4 text-sm font-medium text-slate-500">{p.visit}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-2 py-1 rounded-md text-xs font-bold bg-${p.color}-100 dark:bg-${p.color}-500/20 text-${p.color}-600 dark:text-${p.color}-400`}>{p.cond}</span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <button className="text-sky-500 hover:text-sky-600 font-bold text-sm">View Profile</button>
-                      </td>
+              {loadingQueue ? (
+                <div className="p-8 space-y-4">
+                  {[1,2,3].map(i => <div key={i} className="h-16 bg-slate-100 dark:bg-slate-800 rounded-xl animate-pulse" />)}
+                </div>
+              ) : filteredAppointments.length === 0 ? (
+                <div className="text-center py-16">
+                  <span className="material-symbols-outlined text-5xl text-slate-300 dark:text-slate-600">person_search</span>
+                  <p className="text-slate-500 mt-3 font-medium">No patients found</p>
+                </div>
+              ) : (
+                <table className="w-full text-left">
+                  <thead className="bg-slate-50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 text-xs font-bold uppercase tracking-wider">
+                    <tr>
+                      <th className="px-6 py-4">#</th>
+                      <th className="px-6 py-4">Patient</th>
+                      <th className="px-6 py-4">Time Slot</th>
+                      <th className="px-6 py-4">Priority</th>
+                      <th className="px-6 py-4">Symptoms</th>
+                      <th className="px-6 py-4">Status</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {filteredAppointments.map((appt, idx) => {
+                      const badge = PRIORITY_BADGE[appt.priority] ?? PRIORITY_BADGE[4];
+                      return (
+                        <tr key={appt.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                          <td className="px-6 py-4 text-slate-400 font-bold text-sm">{idx + 1}</td>
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-9 h-9 rounded-full bg-sky-100 dark:bg-sky-800 flex items-center justify-center font-bold text-sky-600 dark:text-sky-400 text-xs flex-shrink-0">
+                                {(appt.patientName ?? '??').split(' ').map(n => n[0]).join('').substring(0,2)}
+                              </div>
+                              <div>
+                                <p className="font-bold text-slate-900 dark:text-white">{appt.patientName ?? 'Unknown'}</p>
+                                {appt.patientAge && (
+                                  <p className="text-xs text-slate-400">Age {appt.patientAge} • {appt.patientGender} • {appt.patientBloodGroup}</p>
+                                )}
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 text-sm font-medium text-slate-500">{appt.time_slot}</td>
+                          <td className="px-6 py-4">
+                            <span className={`text-xs font-bold px-2 py-1 rounded-full ${badge.cls}`}>{badge.label}</span>
+                          </td>
+                          <td className="px-6 py-4 text-sm text-slate-500 max-w-[180px] truncate">{appt.symptoms ?? '—'}</td>
+                          <td className="px-6 py-4">
+                            <span className={`text-xs font-bold px-3 py-1 rounded-full ${
+                              appt.status === 'completed' ? 'bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400' :
+                              appt.status === 'in-progress' ? 'bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-400' :
+                              'bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400'
+                            }`}>{appt.status}</span>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
             </div>
           </div>
         )}

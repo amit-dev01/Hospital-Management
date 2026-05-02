@@ -11,6 +11,8 @@ export default function PatientDashboardContent({ profile, roleData }) {
   const t = useTranslations("PatientDashboard");
   const [appointments, setAppointments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(null); // appointment id being cancelled
+  const [cancelConfirm, setCancelConfirm] = useState(null); // appointment id awaiting confirm
 
   // Fetch real appointments from the API
   const fetchAppointments = useCallback(async () => {
@@ -29,6 +31,19 @@ export default function PatientDashboardContent({ profile, roleData }) {
   }, [profile?.id]);
 
   useEffect(() => { fetchAppointments(); }, [fetchAppointments]);
+
+  const handleCancel = async (apptId) => {
+    setCancelling(apptId);
+    setCancelConfirm(null);
+    try {
+      const res = await fetch(`/api/appointments/${apptId}/cancel`, { method: "PATCH" });
+      if (res.ok) await fetchAppointments();
+    } catch (e) {
+      console.error("Cancel failed:", e);
+    } finally {
+      setCancelling(null);
+    }
+  };
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -258,15 +273,43 @@ export default function PatientDashboardContent({ profile, roleData }) {
                     </div>
                   )}
 
-                  <div className="flex items-center gap-3 bg-black/10 p-3 rounded-xl backdrop-blur-sm">
-                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-emerald-600 font-bold text-xs">
+                  <div className="flex items-center gap-3 bg-black/10 p-3 rounded-xl backdrop-blur-sm mb-4">
+                    <div className="w-10 h-10 bg-white rounded-full flex items-center justify-center text-emerald-600 font-bold text-xs flex-shrink-0">
                       Dr
                     </div>
                     <div>
-                      <p className="font-bold text-sm">Doctor ID: {nextAppointment.doctor_id?.substring(0, 8)}…</p>
-                      <p className="text-xs text-emerald-100">{nextAppointment.symptoms ?? "No symptoms noted"}</p>
+                      <p className="font-bold text-sm">Dr. {nextAppointment.doctor_id?.substring(0, 8)}…</p>
+                      <p className="text-xs text-emerald-100">{nextAppointment.symptoms ?? "General consultation"}</p>
                     </div>
                   </div>
+
+                  {/* Cancel button — only for confirmed, future appointments */}
+                  {nextAppointment.status === "confirmed" && (
+                    cancelConfirm === nextAppointment.id ? (
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleCancel(nextAppointment.id)}
+                          disabled={cancelling === nextAppointment.id}
+                          className="flex-1 bg-red-500 hover:bg-red-600 text-white py-2 rounded-xl text-sm font-bold transition-colors disabled:opacity-50"
+                        >
+                          {cancelling === nextAppointment.id ? "Cancelling…" : "Yes, Cancel"}
+                        </button>
+                        <button
+                          onClick={() => setCancelConfirm(null)}
+                          className="flex-1 bg-white/20 hover:bg-white/30 text-white py-2 rounded-xl text-sm font-bold transition-colors"
+                        >
+                          Keep it
+                        </button>
+                      </div>
+                    ) : (
+                      <button
+                        onClick={() => setCancelConfirm(nextAppointment.id)}
+                        className="w-full bg-white/10 hover:bg-white/20 text-white/90 border border-white/20 py-2 rounded-xl text-sm font-bold transition-colors"
+                      >
+                        Cancel Appointment
+                      </button>
+                    )
+                  )}
                 </div>
               </div>
             ) : (
