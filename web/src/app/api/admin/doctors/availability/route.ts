@@ -3,9 +3,12 @@ import { createClient } from '@/lib/supabase/server';
 
 export const dynamic = 'force-dynamic';
 
-export async function GET() {
+export async function GET(req: Request) {
   try {
     const supabase = await createClient();
+    const { searchParams } = new URL(req.url);
+    const dayParam = searchParams.get('day');
+    const dayOfWeek = dayParam !== null ? parseInt(dayParam) : new Date().getDay();
 
     // Verify admin role
     const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -14,9 +17,7 @@ export async function GET() {
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
     if (!profile || profile.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const dayOfWeek = new Date().getDay(); // 0-6
-
-    // Fetch all doctors and their availability for TODAY
+    // Fetch all doctors
     const { data: doctors, error } = await supabase
       .from('doctors')
       .select(`
@@ -24,36 +25,26 @@ export async function GET() {
         specialization,
         experience_years,
         is_verified,
-        profiles!id ( full_name, phone ),
-        doctor_availability ( is_active, max_patients_per_day, start_time, end_time )
+        profiles!id ( full_name, phone )
       `);
       
     if (error) throw error;
 
-    // Filter availability for today only in JS (since supabase JS client filtering on nested relations is tricky)
-    const formattedDoctors = doctors.map((doc: any) => {
-      // Because we can't easily filter the nested relation by day_of_week in the select string directly without RPC,
-      // actually wait, let's just fetch doctor_availability separately or we can filter it if we used `.eq('doctor_availability.day_of_week', dayOfWeek)` but that filters the parent row if we use inner join.
-      return {
-        ...doc,
-        // we will fetch the specific availability for today below
-      };
-    });
-
+    // Fetch availabilities for the requested day
     const { data: availabilities } = await supabase
       .from('doctor_availability')
-      .select('doctor_id, is_active, max_patients_per_day')
+      .select('doctor_id, is_active, max_patients_per_day, start_time, end_time')
       .eq('day_of_week', dayOfWeek);
 
     const availMap = new Map();
     availabilities?.forEach(a => availMap.set(a.doctor_id, a));
 
-    const finalDoctors = formattedDoctors.map(doc => ({
+    const finalDoctors = doctors.map(doc => ({
       ...doc,
-      today_availability: availMap.get(doc.id) || null
+      day_availability: availMap.get(doc.id) || null
     }));
 
-    return NextResponse.json({ doctors: finalDoctors }, { status: 200 });
+    return NextResponse.json({ doctors: finalDoctors, day: dayOfWeek }, { status: 200 });
 
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });
@@ -71,11 +62,10 @@ export async function POST(req: Request) {
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
     if (!profile || profile.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    const { doctorId, isActive, maxPatients } = await req.json();
-    const dayOfWeek = new Date().getDay();
+    const { doctorId, isActive, maxPatients, day } = await req.json();
+    const dayOfWeek = day !== undefined ? parseInt(day) : new Date().getDay();
 
-    // Upsert the availability for today
-    // To upsert we need the other fields too, so let's fetch first or just update if exists.
+    // Upsert the availability for the specified day
     const { data: existing } = await supabase
       .from('doctor_availability')
       .select('*')
@@ -86,7 +76,10 @@ export async function POST(req: Request) {
     if (existing) {
       const { error } = await supabase
         .from('doctor_availability')
-        .update({ is_active: isActive, max_patients_per_day: maxPatients })
+        .update({ 
+          is_active: isActive, 
+          max_patients_per_day: maxPatients 
+        })
         .eq('id', existing.id);
       if (error) throw error;
     } else {

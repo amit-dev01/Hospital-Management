@@ -9,12 +9,14 @@ export async function GET(request: NextRequest) {
   try {
     const supabase = await createClient();
     const today = new Date().toISOString().split('T')[0];
+    const dayOfWeek = new Date().getDay();
 
     // Run all queries in parallel
     const [
       patientsToday,
       doctorsTotal,
       doctorsVerified,
+      doctorsActiveToday,
       pendingVerification,
       tokensToday,
       appointmentsToday,
@@ -36,6 +38,13 @@ export async function GET(request: NextRequest) {
         .from('doctors')
         .select('id', { count: 'exact', head: true })
         .eq('is_verified', true),
+
+      // Doctors active today
+      supabase
+        .from('doctor_availability')
+        .select('id', { count: 'exact', head: true })
+        .eq('day_of_week', dayOfWeek)
+        .eq('is_active', true),
 
       // Pending verification
       supabase
@@ -62,7 +71,7 @@ export async function GET(request: NextRequest) {
 
     const stats = {
       patientsToday: patientsToday.count ?? 0,
-      doctorsAvailable: doctorsVerified.count ?? 0,
+      doctorsAvailable: doctorsActiveToday.count ?? 0,
       doctorsTotal: doctorsTotal.count ?? 0,
       pendingVerification: pendingVerification.count ?? 0,
       activeQueue: tokenData.filter((t) => ['waiting', 'in-progress'].includes(t.status)).length,

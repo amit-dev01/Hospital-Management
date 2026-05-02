@@ -13,6 +13,7 @@ export default function HospitalDashboardContent({ profile, unverifiedDoctors })
   const [loadingStats, setLoadingStats] = useState(true);
   const [doctorsList, setDoctorsList] = useState([]);
   const [loadingDoctorsList, setLoadingDoctorsList] = useState(false);
+  const [selectedDay, setSelectedDay] = useState(new Date().getDay());
   const [appointments, setAppointments] = useState([]);
   const [tokens, setTokens] = useState([]);
   const [loadingAppointments, setLoadingAppointments] = useState(false);
@@ -54,7 +55,7 @@ export default function HospitalDashboardContent({ profile, unverifiedDoctors })
   const fetchDoctorsList = useCallback(async () => {
     setLoadingDoctorsList(true);
     try {
-      const res = await fetch("/api/admin/doctors/availability");
+      const res = await fetch(`/api/admin/doctors/availability?day=${selectedDay}`);
       if (res.ok) {
         const data = await res.json();
         setDoctorsList(data.doctors || []);
@@ -66,7 +67,7 @@ export default function HospitalDashboardContent({ profile, unverifiedDoctors })
     } finally {
       setLoadingDoctorsList(false);
     }
-  }, []);
+  }, [selectedDay]);
 
   useEffect(() => { 
     fetchStats();
@@ -79,7 +80,7 @@ export default function HospitalDashboardContent({ profile, unverifiedDoctors })
       const res = await fetch("/api/admin/doctors/availability", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ doctorId, isActive, maxPatients })
+        body: JSON.stringify({ doctorId, isActive, maxPatients, day: selectedDay })
       });
       if (res.ok) {
         // Refresh doctors
@@ -303,9 +304,27 @@ export default function HospitalDashboardContent({ profile, unverifiedDoctors })
 
         {activeTab === "doctors" && (
           <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="mb-8">
-              <h1 className="text-3xl font-black text-slate-900 dark:text-white">Doctor Management</h1>
-              <p className="text-slate-500 dark:text-slate-400 mt-1">Review registrations, set availability for today, and control patient limits.</p>
+            <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div>
+                <h1 className="text-3xl font-black text-slate-900 dark:text-white">Doctor Management</h1>
+                <p className="text-slate-500 dark:text-slate-400 mt-1">Review registrations, set availability, and control patient limits.</p>
+              </div>
+              
+              <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((day, idx) => (
+                  <button
+                    key={day}
+                    onClick={() => setSelectedDay(idx)}
+                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                      selectedDay === idx 
+                        ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm" 
+                        : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                    }`}
+                  >
+                    {day}
+                  </button>
+                ))}
+              </div>
             </div>
             
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-sm overflow-hidden">
@@ -315,7 +334,7 @@ export default function HospitalDashboardContent({ profile, unverifiedDoctors })
                     <th className="px-6 py-4">Doctor Details</th>
                     <th className="px-6 py-4">Specialization</th>
                     <th className="px-6 py-4">Status</th>
-                    <th className="px-6 py-4 text-center">Available Today</th>
+                    <th className="px-6 py-4 text-center">Available on {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][selectedDay]}</th>
                     <th className="px-6 py-4 text-center">Max Patients</th>
                   </tr>
                 </thead>
@@ -330,7 +349,7 @@ export default function HospitalDashboardContent({ profile, unverifiedDoctors })
                     </tr>
                   ) : (
                     doctorsList.map((doc) => {
-                      const avail = doc.today_availability || { is_active: false, max_patients_per_day: 20 };
+                      const avail = doc.day_availability || { is_active: false, max_patients_per_day: 20 };
                       
                       return (
                         <tr key={doc.id} className="hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
