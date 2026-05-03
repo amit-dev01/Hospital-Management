@@ -17,15 +17,17 @@ export async function GET(req: Request) {
     const { data: profile } = await supabase.from('profiles').select('role').eq('id', user.id).single();
     if (!profile || profile.role !== 'admin') return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
 
-    // Fetch all doctors
+    // Fetch all doctors and join profile data
     const { data: doctors, error } = await supabase
       .from('doctors')
       .select(`
         id,
         specialization,
         experience_years,
+        hospital_name,
+        license_number,
         is_verified,
-        profiles!id ( full_name, phone )
+        profiles ( full_name, phone )
       `);
       
     if (error) throw error;

@@ -18,6 +18,12 @@ export default function DoctorDashboardContent({ profile, roleData }) {
   const [updateFeedback, setUpdateFeedback] = useState("Update Hours");
   const [activeTab, setActiveTab] = useState("overview");
   const [updatingId, setUpdatingId] = useState(null);
+  const [editingProfile, setEditingProfile] = useState(false);
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [profileForm, setProfileForm] = useState({
+    full_name: profile?.full_name ?? "",
+    phone: profile?.phone ?? "",
+  });
 
   const fetchQueue = useCallback(async () => {
     if (!profile?.id) return;
@@ -46,11 +52,43 @@ export default function DoctorDashboardContent({ profile, roleData }) {
     if (savedEnd) setEndHour(savedEnd);
   }, []);
 
+  useEffect(() => {
+    if (profile) {
+      setProfileForm({
+        full_name: profile.full_name ?? "",
+        phone: profile.phone ?? "",
+      });
+    }
+  }, [profile]);
+
   const handleUpdateHours = () => {
     localStorage.setItem("doctorStartHour", startHour);
     localStorage.setItem("doctorEndHour", endHour);
     setUpdateFeedback("Updated!");
     setTimeout(() => setUpdateFeedback("Update Hours"), 2000);
+  };
+
+  const handleSaveProfile = async () => {
+    setSavingProfile(true);
+    try {
+      const res = await fetch("/api/profile/update", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          full_name: profileForm.full_name,
+          phone: profileForm.phone
+        }),
+      });
+      if (res.ok) {
+        setEditingProfile(false);
+        // Update the local profile state to reflect changes
+        setProfile(prev => ({ ...prev, full_name: profileForm.full_name, phone: profileForm.phone }));
+      }
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setSavingProfile(false);
+    }
   };
 
   const handleNewAppointment = async (e) => {
@@ -126,6 +164,7 @@ export default function DoctorDashboardContent({ profile, roleData }) {
 
           <div className="hidden md:flex items-center gap-6 absolute left-1/2 -translate-x-1/2 h-full">
             <button onClick={() => setActiveTab("overview")} className={`h-full px-4 border-b-2 font-bold text-sm transition-colors ${activeTab === "overview" ? "border-sky-500 text-sky-600 dark:text-sky-400" : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"}`}>Overview</button>
+            <button onClick={() => setActiveTab("profile")} className={`h-full px-4 border-b-2 font-bold text-sm transition-colors ${activeTab === "profile" ? "border-sky-500 text-sky-600 dark:text-sky-400" : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"}`}>Profile</button>
             <button onClick={() => setActiveTab("schedule")} className={`h-full px-4 border-b-2 font-bold text-sm transition-colors ${activeTab === "schedule" ? "border-sky-500 text-sky-600 dark:text-sky-400" : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"}`}>Schedule</button>
             <button onClick={() => setActiveTab("patients")} className={`h-full px-4 border-b-2 font-bold text-sm transition-colors ${activeTab === "patients" ? "border-sky-500 text-sky-600 dark:text-sky-400" : "border-transparent text-slate-500 hover:text-slate-900 dark:hover:text-white"}`}>Patients</button>
           </div>
@@ -365,6 +404,109 @@ export default function DoctorDashboardContent({ profile, roleData }) {
             </div>
           </div>
         </div>
+        )}
+
+        {/* Profile Tab */}
+        {activeTab === "profile" && (
+          <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+            <div className="mb-8">
+              <h1 className="text-3xl font-black text-slate-900 dark:text-white">My Profile</h1>
+              <p className="text-slate-500 dark:text-slate-400 mt-1 font-medium">Update your personal information</p>
+            </div>
+
+            <div className="max-w-2xl space-y-6">
+              {/* Profile Header */}
+              <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm flex flex-col md:flex-row items-center gap-8">
+                <div className="w-32 h-32 rounded-full bg-sky-100 dark:bg-sky-900/50 flex items-center justify-center text-sky-600 dark:text-sky-400 text-4xl font-black border-4 border-white dark:border-slate-900 shadow-xl flex-shrink-0">
+                  {profile?.full_name ? profile.full_name.split(" ").map((w) => w[0]).join("").substring(0, 2).toUpperCase() : "??"}
+                </div>
+                <div className="text-center md:text-left flex-1">
+                  <h2 className="text-3xl font-black text-slate-900 dark:text-white">{profile?.full_name ?? "—"}</h2>
+                  <p className="text-slate-500 dark:text-slate-400 font-medium mt-1">{profile?.email ?? "—"}</p>
+                  <div className="flex flex-wrap justify-center md:justify-start gap-3 mt-4">
+                    <span className="px-3 py-1 bg-sky-100 dark:bg-sky-500/20 text-sky-700 dark:text-sky-400 rounded-lg text-xs font-bold tracking-wider uppercase">Doctor</span>
+                    {roleData?.specialization && (
+                      <span className="px-3 py-1 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 rounded-lg text-xs font-bold tracking-wider uppercase">
+                        {roleData.specialization}
+                      </span>
+                    )}
+                    {roleData?.experience && (
+                      <span className="px-3 py-1 bg-emerald-100 dark:bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 rounded-lg text-xs font-bold tracking-wider uppercase">
+                        {roleData.experience} yrs exp
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </section>
+
+              {/* Personal Details */}
+              <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 shadow-sm">
+                <div className="flex items-center justify-between mb-6 border-b border-slate-100 dark:border-slate-800 pb-4">
+                  <h3 className="text-xl font-bold flex items-center gap-2">
+                    <span className="material-symbols-outlined text-sky-500">person</span>
+                    Personal Details
+                  </h3>
+                  {!editingProfile ? (
+                    <button onClick={() => setEditingProfile(true)} className="text-sky-600 dark:text-sky-400 text-sm font-bold hover:underline">Edit</button>
+                  ) : (
+                    <div className="flex gap-3">
+                      <button onClick={() => setEditingProfile(false)} className="text-slate-500 text-sm font-bold hover:underline">Cancel</button>
+                      <button
+                        onClick={handleSaveProfile}
+                        disabled={savingProfile}
+                        className="bg-sky-500 hover:bg-sky-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold disabled:opacity-50"
+                      >
+                        {savingProfile ? "Saving…" : "Save"}
+                      </button>
+                    </div>
+                  )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Full Name</label>
+                    {editingProfile ? (
+                      <input
+                        value={profileForm.full_name}
+                        onChange={(e) => setProfileForm({ ...profileForm, full_name: e.target.value })}
+                        className="w-full h-10 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 font-medium focus:border-sky-500 outline-none"
+                      />
+                    ) : (
+                      <p className="font-medium text-slate-900 dark:text-white">{profile?.full_name ?? "—"}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Mobile Number</label>
+                    {editingProfile ? (
+                      <input
+                        value={profileForm.phone}
+                        onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                        className="w-full h-10 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg px-3 font-medium focus:border-sky-500 outline-none"
+                      />
+                    ) : (
+                      <p className="font-medium text-slate-900 dark:text-white">{profile?.phone ?? "—"}</p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Email Address</label>
+                    <p className="font-medium text-slate-900 dark:text-white">{profile?.email ?? "—"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Specialization</label>
+                    <p className="font-medium text-slate-900 dark:text-white">{roleData?.specialization ?? "—"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">Experience</label>
+                    <p className="font-medium text-slate-900 dark:text-white">{roleData?.experience ? `${roleData.experience} years` : "—"}</p>
+                  </div>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1">License Number</label>
+                    <p className="font-medium text-slate-900 dark:text-white">{roleData?.license_number ?? "—"}</p>
+                  </div>
+                </div>
+              </section>
+            </div>
+          </div>
         )}
 
         {/* Schedule Tab */}

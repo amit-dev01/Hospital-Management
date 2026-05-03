@@ -77,7 +77,7 @@ export default function BookAppointment() {
     } finally {
       setLoadingDoctors(false);
     }
-  }, [selectedDate]);
+  }, [selectedDate, selectedDepartment]);
 
   useEffect(() => {
     if (bookingMode === "schedule" && step === 2) fetchDoctors();

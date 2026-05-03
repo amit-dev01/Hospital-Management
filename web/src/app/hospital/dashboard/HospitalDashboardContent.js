@@ -55,7 +55,7 @@ export default function HospitalDashboardContent({ profile, unverifiedDoctors })
   const fetchDoctorsList = useCallback(async () => {
     setLoadingDoctorsList(true);
     try {
-      const res = await fetch(`/api/admin/doctors/availability?day=${selectedDay}`);
+      const res = await fetch(`/api/admin/doctors/availability?day=${selectedDay}&t=${Date.now()}`);
       if (res.ok) {
         const data = await res.json();
         setDoctorsList(data.doctors || []);
@@ -72,8 +72,14 @@ export default function HospitalDashboardContent({ profile, unverifiedDoctors })
   useEffect(() => { 
     fetchStats();
     if (activeTab === "appointments") fetchAppointments();
-    if (activeTab === "doctors") fetchDoctorsList();
-  }, [fetchStats, activeTab, fetchAppointments, fetchDoctorsList]);
+  }, [fetchStats, activeTab, fetchAppointments]);
+
+  // Refresh doctors list when doctors tab becomes active
+  useEffect(() => {
+    if (activeTab === "doctors") {
+      fetchDoctorsList();
+    }
+  }, [activeTab, fetchDoctorsList]);
 
   const handleUpdateAvailability = async (doctorId, isActive, maxPatients) => {
     try {
@@ -187,46 +193,83 @@ export default function HospitalDashboardContent({ profile, unverifiedDoctors })
 
             {/* Real Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-              {[
-                {
-                  label: "Patients Today",
-                  val: loadingStats ? "…" : (stats?.patientsToday ?? 0),
-                  icon: "person",
-                  color: "blue",
-                },
-                {
-                  label: "Doctors Available",
-                  val: loadingStats ? "…" : (stats?.doctorsAvailable ?? 0),
-                  sub: stats?.doctorsTotal ? `/${stats.doctorsTotal}` : "",
-                  icon: "medical_services",
-                  color: "emerald",
-                },
-                {
-                  label: "Pending Verification",
-                  val: localUnverified.length,
-                  icon: "verified_user",
-                  color: "purple",
-                },
-                {
-                  label: "Active Queue",
-                  val: loadingStats ? "…" : (stats?.activeQueue ?? 0),
-                  sub: " patients",
-                  icon: "schedule",
-                  color: "amber",
-                },
-              ].map((m) => (
-                <div key={m.label} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-indigo-500/50 transition-colors">
-                  <div className="flex justify-between items-start mb-4">
-                    <div className={`p-3 bg-${m.color}-100 dark:bg-${m.color}-500/20 rounded-xl text-${m.color}-600 dark:text-${m.color}-400`}>
-                      <span className="material-symbols-outlined">{m.icon}</span>
+              {
+                [
+                  {
+                    label: "Patients Today",
+                    val: loadingStats ? "…" : (stats?.patientsToday ?? 0),
+                    icon: "person",
+                    color: "blue",
+                  },
+                  {
+                    label: "Doctors Available",
+                    val: loadingStats ? "…" : (stats?.doctorsAvailable ?? 0),
+                    sub: stats?.doctorsTotal ? `/${stats.doctorsTotal}` : "",
+                    icon: "medical_services",
+                    color: "emerald",
+                  },
+                  {
+                    label: "Pending Verification",
+                    val: localUnverified.length,
+                    icon: "verified_user",
+                    color: "purple",
+                  },
+                  {
+                    label: "Active Queue",
+                    val: loadingStats ? "…" : (stats?.activeQueue ?? 0),
+                    sub: " patients",
+                    icon: "schedule",
+                    color: "amber",
+                  },
+                ].map((m) => (
+                  <div key={m.label} className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:border-indigo-500/50 transition-colors">
+                    <div className="flex justify-between items-start mb-4">
+                      <div className={`p-3 rounded-xl ${m.color === 'blue' ? 'bg-blue-100 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400' : m.color === 'emerald' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-500/20 dark:text-emerald-400' : m.color === 'purple' ? 'bg-purple-100 text-purple-600 dark:bg-purple-500/20 dark:text-purple-400' : 'bg-amber-100 text-amber-600 dark:bg-amber-500/20 dark:text-amber-400'}`}>
+                        <span className="material-symbols-outlined">{m.icon}</span>
+                      </div>
                     </div>
+                    <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1">{m.label}</h3>
+                    <p className="text-3xl font-black text-slate-900 dark:text-white">
+                      {m.val}{m.sub && <span className="text-lg font-bold text-slate-400 dark:text-slate-500 ml-1">{m.sub}</span>}
+                    </p>
                   </div>
-                  <h3 className="text-sm font-bold text-slate-500 dark:text-slate-400 mb-1">{m.label}</h3>
-                  <p className="text-3xl font-black text-slate-900 dark:text-white">
-                    {m.val}{m.sub && <span className="text-lg font-bold text-slate-400 dark:text-slate-500 ml-1">{m.sub}</span>}
-                  </p>
+                ))
+              }
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm mb-8">
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+                <div>
+                  <h2 className="text-xl font-bold text-slate-900 dark:text-white">Pending Doctor Registrations</h2>
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">Review newly registered doctors before approving them for scheduling.</p>
                 </div>
-              ))}
+                <button
+                  onClick={() => setActiveTab("doctors")}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-indigo-500 text-white rounded-xl shadow-sm hover:bg-indigo-600 transition-colors"
+                >
+                  Review Doctors
+                  <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                </button>
+              </div>
+
+              {localUnverified.length > 0 ? (
+                <div className="grid gap-4">
+                  {localUnverified.slice(0, 3).map((doc) => (
+                    <div key={doc.id} className="rounded-2xl border border-slate-200 dark:border-slate-800 p-4 bg-slate-50 dark:bg-slate-950/60">
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                        <div>
+                          <p className="text-sm font-bold text-slate-900 dark:text-white">{doc.profiles?.full_name || 'Unnamed Doctor'}</p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400">{doc.profiles?.phone || 'No phone provided'}</p>
+                        </div>
+                        <div className="text-xs text-slate-500 dark:text-slate-400">
+                          {doc.specialization ? `${doc.specialization} • ${doc.experience_years} yrs` : 'Doctor profile pending details'}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-sm text-slate-500 dark:text-slate-400">No pending doctor registration requests at the moment.</p>
+              )}
             </div>
 
             {/* Today's Activity Grid */}
@@ -310,20 +353,31 @@ export default function HospitalDashboardContent({ profile, unverifiedDoctors })
                 <p className="text-slate-500 dark:text-slate-400 mt-1">Review registrations, set availability, and control patient limits.</p>
               </div>
               
-              <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
-                {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((day, idx) => (
-                  <button
-                    key={day}
-                    onClick={() => setSelectedDay(idx)}
-                    className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
-                      selectedDay === idx 
-                        ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm" 
-                        : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
-                    }`}
-                  >
-                    {day}
-                  </button>
-                ))}
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={fetchDoctorsList}
+                  disabled={loadingDoctorsList}
+                  className="flex items-center gap-2 px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white rounded-lg font-bold text-sm transition-all disabled:opacity-50"
+                >
+                  <span className="material-symbols-outlined text-[16px]">refresh</span>
+                  {loadingDoctorsList ? "Refreshing..." : "Refresh"}
+                </button>
+                
+                <div className="flex bg-slate-100 dark:bg-slate-800 p-1 rounded-xl">
+                  {["SUN", "MON", "TUE", "WED", "THU", "FRI", "SAT"].map((day, idx) => (
+                    <button
+                      key={day}
+                      onClick={() => setSelectedDay(idx)}
+                      className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all ${
+                        selectedDay === idx 
+                          ? "bg-white dark:bg-slate-700 text-indigo-600 dark:text-indigo-400 shadow-sm" 
+                          : "text-slate-500 hover:text-slate-900 dark:hover:text-white"
+                      }`}
+                    >
+                      {day}
+                    </button>
+                  ))}
+                </div>
               </div>
             </div>
             

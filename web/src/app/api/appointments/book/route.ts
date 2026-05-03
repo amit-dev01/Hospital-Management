@@ -26,7 +26,28 @@ export async function POST(request: NextRequest) {
       symptoms, notes,
     } = input;
 
-    // ── 2. Check slot availability ────────────────────────────────────────────
+    // ── 2. Ensure doctor exists and is verified ───────────────────────────────
+    const { data: doctor, error: doctorError } = await supabase
+      .from('doctors')
+      .select('is_verified')
+      .eq('id', doctorId)
+      .single();
+
+    if (doctorError || !doctor) {
+      return NextResponse.json(
+        { error: 'Doctor not found.' },
+        { status: 404 },
+      );
+    }
+
+    if (!doctor.is_verified) {
+      return NextResponse.json(
+        { error: 'Doctor is not verified yet.' },
+        { status: 403 },
+      );
+    }
+
+    // ── 3. Check slot availability ────────────────────────────────────────────
     const { slots, availability, bookedCount, maxPatients } =
       await getAvailableSlots(supabase, doctorId, date);
 
