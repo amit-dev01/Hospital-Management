@@ -30,6 +30,12 @@ export async function GET(
           status,
           created_at,
           started_at
+        ),
+        doctor:profiles!doctor_id (
+          full_name
+        ),
+        doctor_details:doctors!doctor_id (
+          specialization
         )
       `)
       .eq('patient_id', patientId)

@@ -31,6 +31,8 @@ export default function BookAppointment() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [triageResult, setTriageResult] = useState(null);
   const [bookingResult, setBookingResult] = useState(null);
+  const [walkinBookingResult, setWalkinBookingResult] = useState(null);
+  const [walkinBookingLoading, setWalkinBookingLoading] = useState(false);
   const [error, setError] = useState(null);
 
   // Walk-in form
@@ -109,18 +111,80 @@ export default function BookAppointment() {
   useEffect(() => { fetchSlots(); }, [fetchSlots]);
 
   // ── Walk-in: AI triage (keeps existing logic, adds real token) ───────────────
-  const handleTriageSubmit = () => {
+  const handleWalkinBooking = async (isEmergency) => {
+    if (!currentUserId) {
+      return { error: 'Unable to identify your account. Please sign in again.' };
+    }
+
+    const today = new Date().toISOString().split('T')[0];
+    try {
+      const doctorsRes = await fetch(`/api/doctors/available?date=${today}`);
+      if (!doctorsRes.ok) {
+        return { error: 'Unable to find an available doctor for walk-in.' };
+      }
+      const doctorsJson = await doctorsRes.json();
+      const doctorEntry = (doctorsJson.doctors ?? []).find((doc) => doc.availableSlots?.length > 0);
+      if (!doctorEntry) {
+        return { error: 'No doctors are available for walk-in today. Please try again later.' };
+      }
+
+      const doctor = doctorEntry.doctor;
+      const timeSlot = doctorEntry.availableSlots[0];
+      const bookRes = await fetch('/api/appointments/book', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          doctorId: doctor.id,
+          patientId: currentUserId,
+          date: today,
+          timeSlot,
+          isEmergency,
+          isPregnant: specialCategory === 'pregnant',
+          isSeniorCitizen: specialCategory === 'elderly',
+          symptoms: symptoms || null,
+          notes: null,
+        }),
+      });
+      const bookJson = await bookRes.json();
+      if (!bookRes.ok) {
+        return { error: bookJson.error || 'Walk-in booking failed.', doctor, timeSlot };
+      }
+
+      return { ...bookJson, doctor, timeSlot };
+    } catch (error) {
+      return { error: error?.message ?? 'Walk-in booking failed unexpectedly.' };
+    }
+  };
+
+  const handleTriageSubmit = async () => {
     setIsAnalyzing(true);
-    setTimeout(() => {
+    setError(null);
+    setWalkinBookingResult(null);
+
+    setTimeout(async () => {
       setIsAnalyzing(false);
       const s = symptoms.toLowerCase();
-      if (s.includes("chest pain") || s.includes("breathing") || s.includes("bleeding") || s.includes("unconscious")) {
-        setTriageResult({ priority: "EMERGENCY", color: "red", department: "ER / Trauma", wait: "0 mins (Proceed Immediately)", message: "Please proceed directly to the Emergency Room. A trauma team has been notified." });
-      } else if (specialCategory !== "none" || s.includes("fever") || s.includes("pain")) {
-        setTriageResult({ priority: "HIGH", color: "amber", department: "General Medicine", wait: "15 mins", message: "You have been placed in the priority queue." });
+      const isEmergency = s.includes('chest pain') || s.includes('breathing') || s.includes('bleeding') || s.includes('unconscious');
+
+      if (isEmergency) {
+        setTriageResult({ priority: 'EMERGENCY', color: 'red', department: 'ER / Trauma', wait: '0 mins (Proceed Immediately)', message: 'Please proceed directly to the Emergency Room. A trauma team has been notified.' });
+      } else if (specialCategory !== 'none' || s.includes('fever') || s.includes('pain')) {
+        setTriageResult({ priority: 'HIGH', color: 'amber', department: 'General Medicine', wait: '15 mins', message: 'You have been placed in the priority queue.' });
       } else {
-        setTriageResult({ priority: "NORMAL", color: "emerald", department: "OPD", wait: "45 mins", message: "You have been added to the standard queue. Please have a seat in the waiting area." });
+        setTriageResult({ priority: 'NORMAL', color: 'emerald', department: 'OPD', wait: '45 mins', message: 'You have been added to the standard queue. Please have a seat in the waiting area.' });
       }
+
+      if (bookingMode === 'walkin') {
+        setWalkinBookingLoading(true);
+        const walkinData = await handleWalkinBooking(isEmergency);
+        setWalkinBookingLoading(false);
+        if (walkinData.error) {
+          setError(walkinData.error);
+        } else {
+          setWalkinBookingResult(walkinData);
+        }
+      }
+
       setStep(3);
     }, 2000);
   };
@@ -278,6 +342,40 @@ export default function BookAppointment() {
                 </div>
               </div>
             </div>
+
+            {walkinBookingLoading ? (
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm text-center">
+                <p className="font-bold text-slate-900 dark:text-white">Booking your walk-in appointment...</p>
+                <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">Please wait while we assign an available doctor and token.</p>
+              </div>
+            ) : walkinBookingResult ? (
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
+                <div className="text-center mb-4">
+                  <p className="text-sm uppercase tracking-wider font-bold text-slate-500 dark:text-slate-400">Assigned Doctor</p>
+                  <p className="text-2xl font-black text-slate-900 dark:text-white">{walkinBookingResult.doctor?.name ?? 'Assigned Doctor'}</p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 text-center">
+                  <div className="p-4 bg-slate-50 dark:bg-slate-950/50 rounded-2xl">
+                    <p className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">Slot</p>
+                    <p className="font-bold text-slate-900 dark:text-white">{walkinBookingResult.timeSlot ?? 'TBD'}</p>
+                  </div>
+                  <div className="p-4 bg-slate-50 dark:bg-slate-950/50 rounded-2xl">
+                    <p className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">Queue</p>
+                    <p className="font-bold text-slate-900 dark:text-white">#{walkinBookingResult.queuePosition ?? '—'}</p>
+                  </div>
+                  <div className="p-4 bg-slate-50 dark:bg-slate-950/50 rounded-2xl">
+                    <p className="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400">Token</p>
+                    <p className="font-bold text-slate-900 dark:text-white">{walkinBookingResult.token?.token_number ?? '—'}</p>
+                  </div>
+                </div>
+              </div>
+            ) : error ? (
+              <div className="bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/30 rounded-2xl p-6 text-center">
+                <p className="font-bold text-red-700 dark:text-red-300">{error}</p>
+                <p className="text-sm text-red-500 dark:text-red-400 mt-2">Please try again or choose a booked appointment.</p>
+              </div>
+            ) : null}
+
             <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 text-center shadow-sm">
               <p className="font-bold text-slate-900 dark:text-white text-lg">{triageResult.message}</p>
               <p className="text-sm text-slate-500 dark:text-slate-400 mt-2">

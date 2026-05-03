@@ -278,7 +278,7 @@ export default function PatientDashboardContent({ profile, roleData }) {
                       Dr
                     </div>
                     <div>
-                      <p className="font-bold text-sm">Dr. {nextAppointment.doctor_id?.substring(0, 8)}…</p>
+                      <p className="font-bold text-sm">Dr. {nextAppointment.doctor?.full_name ?? nextAppointment.doctor_id?.substring(0, 8) ?? 'Unknown'}</p>
                       <p className="text-xs text-emerald-100">{nextAppointment.symptoms ?? "General consultation"}</p>
                     </div>
                   </div>
@@ -349,7 +349,7 @@ export default function PatientDashboardContent({ profile, roleData }) {
                         <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
                           {new Date(appt.date).toLocaleDateString("en-US", { month: "short", day: "numeric" })} at {appt.time_slot}
                         </p>
-                        <p className="text-xs text-slate-500 truncate">{appt.symptoms ?? "General consultation"}</p>
+                        <p className="text-xs text-slate-500 truncate">Dr. {appt.doctor?.full_name ?? appt.doctor_id?.substring(0, 8) ?? 'Unknown'} • {appt.symptoms ?? "General consultation"}</p>
                       </div>
                       <span className={`text-xs font-bold px-2 py-1 rounded-full flex-shrink-0 ${
                         appt.status === "completed" ? "bg-emerald-100 dark:bg-emerald-500/20 text-emerald-600" :

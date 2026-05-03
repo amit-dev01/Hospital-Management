@@ -32,7 +32,7 @@ export async function GET() {
         priority,
         is_emergency,
         patient:profiles!patient_id ( full_name, phone ),
-        doctor:profiles!doctor_id ( full_name ),
+        doctor:profiles!doctor_id ( id, full_name ),
         doctor_details:doctors!doctor_id ( specialization )
       `)
       .eq('date', today)

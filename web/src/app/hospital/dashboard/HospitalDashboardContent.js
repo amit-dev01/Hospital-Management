@@ -81,6 +81,13 @@ export default function HospitalDashboardContent({ profile, unverifiedDoctors })
     }
   }, [activeTab, fetchDoctorsList]);
 
+  // Auto-refresh appointments when admin is viewing the appointments tab
+  useEffect(() => {
+    if (activeTab !== "appointments") return;
+    const interval = setInterval(fetchAppointments, 10000);
+    return () => clearInterval(interval);
+  }, [activeTab, fetchAppointments]);
+
   const handleUpdateAvailability = async (doctorId, isActive, maxPatients) => {
     try {
       const res = await fetch("/api/admin/doctors/availability", {
